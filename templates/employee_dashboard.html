@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Employee Dashboard</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; background-color: #f0f2f5; }
+        .navbar {
+            background-color: #4a90e2;
+            padding: 0 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+            height: 54px;
+        }
+        .navbar .brand {
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            height: 100%;
+        }
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 6px 14px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        .nav-links a:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        .nav-links a.logout {
+            background-color: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        .nav-links a.logout:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+        .content { padding: 40px; }
+        h2 { color: #333; margin-bottom: 8px; }
+        p { color: #555; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <span class="brand">Welcome, {{ username }}</span>
+        <nav class="nav-links">
+            <a href="{{ url_for('employee.employee_dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('employee.request_leave') }}">Request Leave</a>
+            <a href="{{ url_for('employee.view_requests') }}">View Requests</a>
+            <a href="{{ url_for('employee.employee_logout') }}" class="logout">Logout</a>
+        </nav>
+    </div>
+    <div class="content">
+        <h2>Employee Dashboard</h2>
+        <p>Leave request features coming soon.</p>
+    </div>
+</body>
+</html>
