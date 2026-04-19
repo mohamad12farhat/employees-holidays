@@ -2,10 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>View Requests</title>
+    <title>My Leave Requests</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: Arial, sans-serif; background-color: #f0f2f5; }
+
         .navbar {
             background-color: #4a90e2;
             padding: 0 24px;
@@ -25,15 +26,94 @@
             border-radius: 4px;
             transition: background-color 0.2s;
         }
-        .nav-links a:hover { background-color: rgba(255, 255, 255, 0.2); }
+        .nav-links a:hover { background-color: rgba(255,255,255,0.2); }
         .nav-links a.logout {
-            background-color: rgba(255, 255, 255, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.4);
+            background-color: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.4);
         }
-        .nav-links a.logout:hover { background-color: rgba(255, 255, 255, 0.3); }
+        .nav-links a.logout:hover { background-color: rgba(255,255,255,0.3); }
+
         .content { padding: 40px; }
-        h2 { color: #333; margin-bottom: 8px; }
-        p { color: #555; font-size: 14px; }
+
+        .page-header {
+            margin-bottom: 24px;
+        }
+        .page-header h2 {
+            color: #333;
+            font-size: 22px;
+            margin-bottom: 4px;
+        }
+        .page-header p {
+            color: #888;
+            font-size: 13px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        thead {
+            background-color: #f7f9fc;
+            border-bottom: 2px solid #e8ecf0;
+        }
+        thead th {
+            text-align: left;
+            padding: 14px 18px;
+            color: #555;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+        tbody tr {
+            border-bottom: 1px solid #f0f2f5;
+            transition: background-color 0.15s;
+        }
+        tbody tr:last-child { border-bottom: none; }
+        tbody tr:hover { background-color: #fafbfd; }
+        tbody td {
+            padding: 14px 18px;
+            color: #444;
+            vertical-align: middle;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+        .badge-pending  { background-color: #fff7e6; color: #b87d00; border: 1px solid #ffe0a0; }
+        .badge-approved { background-color: #e6f9f0; color: #1e7d4f; border: 1px solid #a8e6c7; }
+        .badge-rejected { background-color: #fff0f0; color: #c0392b; border: 1px solid #f5b7b1; }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #aaa;
+        }
+        .empty-state p { font-size: 15px; margin-bottom: 12px; }
+        .empty-state a {
+            display: inline-block;
+            padding: 9px 20px;
+            background-color: #4a90e2;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .empty-state a:hover { background-color: #357abd; }
     </style>
 </head>
 <body>
@@ -46,9 +126,48 @@
             <a href="{{ url_for('employee.employee_logout') }}" class="logout">Logout</a>
         </nav>
     </div>
+
     <div class="content">
-        <h2>My Leave Requests</h2>
-        <p>Your submitted requests will appear here.</p>
+        <div class="page-header">
+            <h2>My Leave Requests</h2>
+            <p>All leave requests you have submitted.</p>
+        </div>
+
+        <div class="card">
+            {% if requests %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Leave Days</th>
+                        <th>Reason</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in requests %}
+                    <tr>
+                        <td style="color:#aaa;">{{ req.id }}</td>
+                        <td>{{ req.start_date }}</td>
+                        <td>{{ req.end_date }}</td>
+                        <td>{{ req.leave_days }}</td>
+                        <td>{{ req.reason }}</td>
+                        <td>
+                            <span class="badge badge-{{ req.status }}">{{ req.status }}</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <p>You haven't submitted any leave requests yet.</p>
+                <a href="{{ url_for('employee.request_leave') }}">Request Leave</a>
+            </div>
+            {% endif %}
+        </div>
     </div>
 </body>
 </html>

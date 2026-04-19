@@ -31,9 +31,102 @@
             border: 1px solid rgba(255, 255, 255, 0.4);
         }
         .nav-links a.logout:hover { background-color: rgba(255, 255, 255, 0.3); }
-        .content { padding: 40px; }
-        h2 { color: #333; margin-bottom: 8px; }
-        p { color: #555; font-size: 14px; }
+
+        .content {
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 32px 36px;
+            width: 100%;
+            max-width: 480px;
+        }
+
+        .card h2 {
+            color: #333;
+            font-size: 20px;
+            margin-bottom: 6px;
+        }
+
+        .card .subtitle {
+            color: #888;
+            font-size: 13px;
+            margin-bottom: 28px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 6px;
+        }
+
+        .form-group input[type="date"],
+        .form-group textarea {
+            width: 100%;
+            padding: 9px 12px;
+            border: 1px solid #d0d5dd;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #333;
+            background-color: #fff;
+            transition: border-color 0.2s;
+            outline: none;
+        }
+
+        .form-group input[type="date"]:focus,
+        .form-group textarea:focus {
+            border-color: #4a90e2;
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.15);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 90px;
+        }
+
+        .date-row {
+            display: flex;
+            gap: 16px;
+        }
+
+        .date-row .form-group {
+            flex: 1;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 10px;
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn-submit:hover { background-color: #357abd; }
+
+        .alert {
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+        .alert-success { background-color: #e6f9f0; color: #1e7d4f; border: 1px solid #a8e6c7; }
+        .alert-danger  { background-color: #fff0f0; color: #c0392b; border: 1px solid #f5b7b1; }
     </style>
 </head>
 <body>
@@ -46,9 +139,38 @@
             <a href="{{ url_for('employee.employee_logout') }}" class="logout">Logout</a>
         </nav>
     </div>
+
     <div class="content">
-        <h2>Request Leave</h2>
-        <p>Leave request form coming soon.</p>
+        <div class="card">
+            <h2>Request Leave</h2>
+            <p class="subtitle">Weekends and Lebanese public holidays are excluded. You have <strong>{{ remaining }}</strong> of 15 days remaining this year.</p>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endwith %}
+
+            <form method="POST" action="{{ url_for('employee.request_leave') }}">
+                <div class="date-row">
+                    <div class="form-group">
+                        <label for="start_date">Start Date</label>
+                        <input type="date" id="start_date" name="start_date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="end_date">End Date</label>
+                        <input type="date" id="end_date" name="end_date" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="reason">Reason <span style="font-weight:400;color:#aaa;">(optional)</span></label>
+                    <textarea id="reason" name="reason" placeholder="Briefly describe the reason for your leave..."></textarea>
+                </div>
+
+                <button type="submit" class="btn-submit">Submit Request</button>
+            </form>
+        </div>
     </div>
 </body>
 </html>
