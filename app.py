@@ -46,7 +46,37 @@ def leave_requests():
     if not session.get('admin'):
         flash('You must be logged in as admin to access that page.')
         return redirect(url_for('login'))
-    return render_template('view-leave-requests.html')
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT lr.id, u.username, lr.start_date, lr.end_date,
+               lr.leave_days, lr.reason, lr.status
+        FROM leave_requests lr
+        JOIN users u ON lr.user_id = u.id
+        ORDER BY lr.id DESC
+    ''')
+    requests_list = cursor.fetchall()
+    conn.close()
+    return render_template('view-leave-requests.html', requests=requests_list)
+
+
+@app.route('/admin/update-request-status/<int:request_id>', methods=['POST'])
+def update_request_status(request_id):
+    if not session.get('admin'):
+        flash('You must be logged in as admin to access that page.')
+        return redirect(url_for('login'))
+    new_status = request.form.get('status')
+    if new_status not in ('pending', 'approved', 'rejected'):
+        flash('Invalid status.', 'danger')
+        return redirect(url_for('leave_requests'))
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('UPDATE leave_requests SET status = ? WHERE id = ?', (new_status, request_id))
+    conn.commit()
+    conn.close()
+    flash(f'Request #{request_id} status updated to {new_status}.', 'success')
+    return redirect(url_for('leave_requests'))
 
 
 @app.route('/admin/logout')
