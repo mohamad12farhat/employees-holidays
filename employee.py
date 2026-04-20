@@ -175,6 +175,24 @@ def request_leave():
                                    username=session.get('employee_username'),
                                    remaining=remaining)
 
+        # --- Overlap check ---
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute(
+            '''SELECT id FROM leave_requests
+               WHERE user_id = ?
+                 AND status IN ('pending', 'approved')
+                 AND start_date <= ?
+                 AND end_date >= ?''',
+            (user_id, end_str, start_str)
+        )
+        if cursor.fetchone():
+            conn.close()
+            flash('You already have a leave request that overlaps with these dates.', 'danger')
+            return render_template('request_leave.html',
+                                   username=session.get('employee_username'),
+                                   remaining=get_remaining_days(user_id, year))
+
         # --- Save to DB ---
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
