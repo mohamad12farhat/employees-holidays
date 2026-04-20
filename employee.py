@@ -291,6 +291,33 @@ def view_requests():
                            requests=requests_list)
 
 
+@employee_bp.route('/employee/cancel-request/<int:request_id>', methods=['POST'])
+def cancel_request(request_id):
+    if not session.get('employee_id'):
+        flash('You must be logged in to access that page.')
+        return redirect(url_for('employee.employee_login'))
+    user_id = session['employee_id']
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute(
+        'SELECT status FROM leave_requests WHERE id = ? AND user_id = ?',
+        (request_id, user_id)
+    )
+    row = cursor.fetchone()
+    if not row:
+        conn.close()
+        flash('Request not found.', 'danger')
+    elif row[0] != 'pending':
+        conn.close()
+        flash('Only pending requests can be cancelled.', 'danger')
+    else:
+        cursor.execute('DELETE FROM leave_requests WHERE id = ?', (request_id,))
+        conn.commit()
+        conn.close()
+        flash('Leave request cancelled successfully.', 'success')
+    return redirect(url_for('employee.view_requests'))
+
+
 @employee_bp.route('/employee/logout')
 def employee_logout():
     session.pop('employee_id', None)
