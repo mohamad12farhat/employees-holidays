@@ -49,6 +49,28 @@ def get_remaining_days(user_id, year):
     return ANNUAL_LEAVE_DAYS - used
 
 
+def check_date_overlap(user_id, start_str, end_str):
+    """
+    Returns (has_approved_conflict: bool, has_pending_conflict: bool).
+    Checks whether any OTHER employee has a request whose date range
+    overlaps [start_str, end_str].
+    """
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute(
+        '''SELECT status FROM leave_requests
+           WHERE user_id != ?
+             AND status IN ('approved', 'pending')
+             AND start_date <= ?
+             AND end_date   >= ?''',
+        (user_id, end_str, start_str)
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    statuses = {r[0] for r in rows}
+    return ('approved' in statuses), ('pending' in statuses)
+
+
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
@@ -161,6 +183,30 @@ def request_leave():
                                    username=session.get('employee_username'),
                                    remaining=get_remaining_days(user_id, today.year))
 
+        # --- Cross-employee overlap check ---
+        approved_conflict, pending_conflict = check_date_overlap(user_id, start_str, end_str)
+
+        if approved_conflict:
+            flash(
+                'These dates overlap with an already-approved leave request from another employee. '
+                'Please choose different dates.',
+                'danger'
+            )
+            return render_template('request_leave.html',
+                                   username=session.get('employee_username'),
+                                   remaining=get_remaining_days(user_id, today.year))
+
+        if pending_conflict and not request.form.get('confirmed'):
+            return render_template('request_leave.html',
+                                   username=session.get('employee_username'),
+                                   remaining=get_remaining_days(user_id, today.year),
+                                   pending_conflict=True,
+                                   form_data={
+                                       'start_date': start_str,
+                                       'end_date':   end_str,
+                                       'reason':     reason or '',
+                                   })
+
         # --- Quota check (based on the year of start_date) ---
         year      = start.year
         remaining = get_remaining_days(user_id, year)
@@ -243,6 +289,33 @@ def view_requests():
     return render_template('view_requests.html',
                            username=session.get('employee_username'),
                            requests=requests_list)
+
+
+@employee_bp.route('/employee/cancel-request/<int:request_id>', methods=['POST'])
+def cancel_request(request_id):
+    if not session.get('employee_id'):
+        flash('You must be logged in to access that page.')
+        return redirect(url_for('employee.employee_login'))
+    user_id = session['employee_id']
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute(
+        'SELECT status FROM leave_requests WHERE id = ? AND user_id = ?',
+        (request_id, user_id)
+    )
+    row = cursor.fetchone()
+    if not row:
+        conn.close()
+        flash('Request not found.', 'danger')
+    elif row[0] != 'pending':
+        conn.close()
+        flash('Only pending requests can be cancelled.', 'danger')
+    else:
+        cursor.execute('DELETE FROM leave_requests WHERE id = ?', (request_id,))
+        conn.commit()
+        conn.close()
+        flash('Leave request cancelled successfully.', 'success')
+    return redirect(url_for('employee.view_requests'))
 
 
 @employee_bp.route('/employee/logout')

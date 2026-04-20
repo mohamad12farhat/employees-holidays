@@ -127,6 +127,9 @@
         }
         .alert-success { background-color: #e6f9f0; color: #1e7d4f; border: 1px solid #a8e6c7; }
         .alert-danger  { background-color: #fff0f0; color: #c0392b; border: 1px solid #f5b7b1; }
+        .alert-warning { background-color: #fffbe6; color: #7d5a00; border: 1px solid #ffe58f; }
+        .btn-warning   { background-color: #e6a817; }
+        .btn-warning:hover { background-color: #c98e10; }
     </style>
 </head>
 <body>
@@ -155,20 +158,34 @@
                 <div class="date-row">
                     <div class="form-group">
                         <label for="start_date">Start Date</label>
-                        <input type="date" id="start_date" name="start_date" required>
+                        <input type="date" id="start_date" name="start_date" required
+                               value="{{ form_data.start_date if form_data else '' }}">
                     </div>
                     <div class="form-group">
                         <label for="end_date">End Date</label>
-                        <input type="date" id="end_date" name="end_date" required>
+                        <input type="date" id="end_date" name="end_date" required
+                               value="{{ form_data.end_date if form_data else '' }}">
                     </div>
                 </div>
 
                 <div class="form-group">
                     <label for="reason">Reason <span style="font-weight:400;color:#aaa;">(optional)</span></label>
-                    <textarea id="reason" name="reason" placeholder="Briefly describe the reason for your leave..."></textarea>
+                    <textarea id="reason" name="reason" placeholder="Briefly describe the reason for your leave...">{{ form_data.reason if form_data else '' }}</textarea>
                 </div>
 
+                {% if pending_conflict %}
+                <div class="alert alert-warning">
+                    One or more of your selected dates overlap with a <strong>pending</strong> request
+                    from another employee. You may still submit — the admin will resolve the conflict.
+                    <input type="hidden" name="confirmed" value="1">
+                </div>
+                <div style="display:flex; gap:12px;">
+                    <button type="submit" class="btn-submit btn-warning" style="flex:1;">Submit Anyway</button>
+                    <a href="{{ url_for('employee.request_leave') }}" class="btn-submit" style="flex:1; background-color:#aaa; text-align:center; text-decoration:none; line-height:1.6;">Cancel</a>
+                </div>
+                {% else %}
                 <button type="submit" class="btn-submit">Submit Request</button>
+                {% endif %}
             </form>
         </div>
     </div>

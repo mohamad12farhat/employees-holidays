@@ -114,6 +114,28 @@
             font-weight: 600;
         }
         .empty-state a:hover { background-color: #357abd; }
+
+        .btn-cancel {
+            padding: 4px 12px;
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn-cancel:hover { background-color: #c0392b; }
+
+        .alert {
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+        .alert-success { background-color: #e6f9f0; color: #1e7d4f; border: 1px solid #a8e6c7; }
+        .alert-danger  { background-color: #fff0f0; color: #c0392b; border: 1px solid #f5b7b1; }
     </style>
 </head>
 <body>
@@ -133,6 +155,12 @@
             <p>All leave requests you have submitted.</p>
         </div>
 
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}" style="margin:16px 18px 0;">{{ message }}</div>
+            {% endfor %}
+        {% endwith %}
+
         <div class="card">
             {% if requests %}
             <table>
@@ -144,6 +172,7 @@
                         <th>Leave Days</th>
                         <th>Reason</th>
                         <th>Status</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -156,6 +185,16 @@
                         <td>{{ req.reason }}</td>
                         <td>
                             <span class="badge badge-{{ req.status }}">{{ req.status }}</span>
+                        </td>
+                        <td>
+                            {% if req.status == 'pending' %}
+                            <form method="POST" action="{{ url_for('employee.cancel_request', request_id=req.id) }}"
+                                  onsubmit="return confirm('Cancel this leave request?')">
+                                <button type="submit" class="btn-cancel">Cancel</button>
+                            </form>
+                            {% else %}
+                            —
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
