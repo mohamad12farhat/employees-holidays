@@ -2,20 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>View Leave Requests</title>
+    <title>Leave Requests — Admin</title>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; background-color: #f0f2f5; }
 
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f2f5;
-        }
-
-        /* Navbar */
         .navbar {
             background-color: #2c3e50;
             display: flex;
@@ -24,20 +15,8 @@
             padding: 0 30px;
             height: 56px;
         }
-
-        .navbar .brand {
-            color: #ffffff;
-            font-size: 18px;
-            font-weight: bold;
-            text-decoration: none;
-        }
-
-        .navbar ul {
-            list-style: none;
-            display: flex;
-            gap: 8px;
-        }
-
+        .navbar .brand { color: #fff; font-size: 18px; font-weight: bold; text-decoration: none; }
+        .navbar ul { list-style: none; display: flex; gap: 8px; }
         .navbar ul li a {
             color: #ccd6e0;
             text-decoration: none;
@@ -46,34 +25,84 @@
             font-size: 14px;
             transition: background-color 0.2s;
         }
+        .navbar ul li a:hover { background-color: #3d5166; color: #fff; }
+        .navbar ul li a.logout { color: #e74c3c; }
+        .navbar ul li a.logout:hover { background-color: #e74c3c; color: #fff; }
 
-        .navbar ul li a:hover {
-            background-color: #3d5166;
-            color: #ffffff;
+        .content { padding: 40px; }
+
+        .page-header { margin-bottom: 24px; }
+        .page-header h2 { color: #333; font-size: 22px; margin-bottom: 4px; }
+        .page-header p { color: #888; font-size: 13px; }
+
+        .alert {
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+        .alert-success { background-color: #e6f9f0; color: #1e7d4f; border: 1px solid #a8e6c7; }
+        .alert-danger  { background-color: #fff0f0; color: #c0392b; border: 1px solid #f5b7b1; }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            overflow: hidden;
         }
 
-        .navbar ul li a.logout {
-            color: #e74c3c;
-        }
-
-        .navbar ul li a.logout:hover {
-            background-color: #e74c3c;
-            color: #ffffff;
-        }
-
-        /* Page content */
-        .content {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: calc(100vh - 56px);
-        }
-
-        h1 {
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        thead { background-color: #f7f9fc; border-bottom: 2px solid #e8ecf0; }
+        thead th {
+            text-align: left;
+            padding: 14px 18px;
             color: #555;
-            font-size: 22px;
-            font-weight: normal;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
         }
+        tbody tr { border-bottom: 1px solid #f0f2f5; transition: background-color 0.15s; }
+        tbody tr:last-child { border-bottom: none; }
+        tbody tr:hover { background-color: #fafbfd; }
+        tbody td { padding: 14px 18px; color: #444; vertical-align: middle; }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+        .badge-pending  { background-color: #fff7e6; color: #b87d00; border: 1px solid #ffe0a0; }
+        .badge-approved { background-color: #e6f9f0; color: #1e7d4f; border: 1px solid #a8e6c7; }
+        .badge-rejected { background-color: #fff0f0; color: #c0392b; border: 1px solid #f5b7b1; }
+
+        .status-form { display: flex; align-items: center; gap: 8px; }
+        .status-select {
+            padding: 4px 8px;
+            border: 1px solid #d0d7de;
+            border-radius: 4px;
+            font-size: 13px;
+            background: #fff;
+            cursor: pointer;
+        }
+        .btn-save {
+            padding: 4px 12px;
+            background-color: #2c3e50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn-save:hover { background-color: #1a252f; }
+
+        .empty-state { text-align: center; padding: 60px 20px; color: #aaa; }
+        .empty-state p { font-size: 15px; }
     </style>
 </head>
 <body>
@@ -88,7 +117,65 @@
     </nav>
 
     <div class="content">
-        <h1>No leave requests found for now</h1>
+        <div class="page-header">
+            <h2>All Leave Requests</h2>
+            <p>View and manage leave requests submitted by employees.</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endwith %}
+
+        <div class="card">
+            {% if requests %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Employee</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Days</th>
+                        <th>Reason</th>
+                        <th>Status</th>
+                        <th>Change Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in requests %}
+                    <tr>
+                        <td style="color:#aaa;">{{ req['id'] }}</td>
+                        <td>{{ req['username'] }}</td>
+                        <td>{{ req['start_date'] }}</td>
+                        <td>{{ req['end_date'] }}</td>
+                        <td>{{ req['leave_days'] }}</td>
+                        <td>{{ req['reason'] or '—' }}</td>
+                        <td>
+                            <span class="badge badge-{{ req['status'] }}">{{ req['status'] }}</span>
+                        </td>
+                        <td>
+                            <form class="status-form" method="POST"
+                                  action="{{ url_for('update_request_status', request_id=req['id']) }}">
+                                <select class="status-select" name="status">
+                                    <option value="pending"  {% if req['status'] == 'pending'  %}selected{% endif %}>Pending</option>
+                                    <option value="approved" {% if req['status'] == 'approved' %}selected{% endif %}>Approved</option>
+                                    <option value="rejected" {% if req['status'] == 'rejected' %}selected{% endif %}>Rejected</option>
+                                </select>
+                                <button type="submit" class="btn-save">Save</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <p>No leave requests found.</p>
+            </div>
+            {% endif %}
+        </div>
     </div>
 
 </body>
