@@ -2,6 +2,7 @@ import sqlite3
 from datetime import date, timedelta
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from holidays import get_lebanon_holidays
+from database import DB_PATH
 
 employee_bp = Blueprint('employee', __name__)
 
@@ -33,7 +34,7 @@ def count_working_days(start_date_str, end_date_str):
 
 def get_remaining_days(user_id, year):
     """Return how many leave days the employee still has for the given year."""
-    conn = sqlite3.connect('database.db')
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute(
         '''SELECT COALESCE(SUM(leave_days), 0)
@@ -58,7 +59,7 @@ def employee_login():
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
-        conn = sqlite3.connect('database.db')
+        conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute(
             'SELECT id FROM users WHERE username = ? AND password = ? AND role = ?',
@@ -88,7 +89,7 @@ def employee_register():
         if password != confirm_password:
             error = 'Passwords do not match.'
         else:
-            conn = sqlite3.connect('database.db')
+            conn = sqlite3.connect(DB_PATH)
             cursor = conn.cursor()
             cursor.execute('SELECT id FROM users WHERE username = ?', (email,))
             existing = cursor.fetchone()
@@ -175,7 +176,7 @@ def request_leave():
                                    remaining=remaining)
 
         # --- Save to DB ---
-        conn = sqlite3.connect('database.db')
+        conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute(
             '''INSERT INTO leave_requests (user_id, start_date, end_date, reason, leave_days, status)
@@ -205,7 +206,7 @@ def view_requests():
         flash('You must be logged in to access that page.')
         return redirect(url_for('employee.employee_login'))
     user_id = session['employee_id']
-    conn = sqlite3.connect('database.db')
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute(
         '''SELECT id, start_date, end_date, leave_days, reason, status

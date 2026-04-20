@@ -1,6 +1,6 @@
 import sqlite3
 from flask import Flask, render_template, request, redirect, url_for, session, flash
-from database import init_db
+from database import init_db, DB_PATH
 from employee import employee_bp
 
 app = Flask(__name__)
@@ -17,7 +17,7 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        conn = sqlite3.connect('database.db')
+        conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute(
             'SELECT id FROM users WHERE username = ? AND password = ? AND role = ?',
