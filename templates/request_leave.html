@@ -179,7 +179,10 @@
                     from another employee. You may still submit — the admin will resolve the conflict.
                     <input type="hidden" name="confirmed" value="1">
                 </div>
-                <button type="submit" class="btn-submit btn-warning">Submit Anyway</button>
+                <div style="display:flex; gap:12px;">
+                    <button type="submit" class="btn-submit btn-warning" style="flex:1;">Submit Anyway</button>
+                    <a href="{{ url_for('employee.request_leave') }}" class="btn-submit" style="flex:1; background-color:#aaa; text-align:center; text-decoration:none; line-height:1.6;">Cancel</a>
+                </div>
                 {% else %}
                 <button type="submit" class="btn-submit">Submit Request</button>
                 {% endif %}
