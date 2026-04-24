@@ -6,6 +6,7 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: Arial, sans-serif; background-color: #f0f2f5; }
+
         .navbar {
             background-color: #4a90e2;
             padding: 0 24px;
@@ -15,16 +16,8 @@
             color: white;
             height: 54px;
         }
-        .navbar .brand {
-            font-weight: bold;
-            font-size: 16px;
-        }
-        .nav-links {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            height: 100%;
-        }
+        .navbar .brand { font-weight: bold; font-size: 16px; }
+        .nav-links { display: flex; align-items: center; gap: 8px; height: 100%; }
         .nav-links a {
             color: white;
             text-decoration: none;
@@ -33,19 +26,126 @@
             border-radius: 4px;
             transition: background-color 0.2s;
         }
-        .nav-links a:hover {
-            background-color: rgba(255, 255, 255, 0.2);
-        }
+        .nav-links a:hover { background-color: rgba(255,255,255,0.2); }
         .nav-links a.logout {
-            background-color: rgba(255, 255, 255, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.4);
+            background-color: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.4);
         }
-        .nav-links a.logout:hover {
-            background-color: rgba(255, 255, 255, 0.3);
-        }
+        .nav-links a.logout:hover { background-color: rgba(255,255,255,0.3); }
+
         .content { padding: 40px; }
-        h2 { color: #333; margin-bottom: 8px; }
-        p { color: #555; font-size: 14px; }
+
+        .page-header { margin-bottom: 28px; }
+        .page-header h2 { color: #333; font-size: 22px; margin-bottom: 4px; }
+        .page-header p  { color: #888; font-size: 13px; }
+
+        /* Summary cards */
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            padding: 22px 20px;
+        }
+        .card .card-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #999;
+            margin-bottom: 8px;
+        }
+        .card .card-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #333;
+        }
+        .card .card-sub {
+            font-size: 12px;
+            color: #aaa;
+            margin-top: 4px;
+        }
+        .card.green .card-value { color: #1e7d4f; }
+        .card.orange .card-value { color: #b87d00; }
+        .card.blue .card-value { color: #4a90e2; }
+
+        /* Quick action */
+        .quick-action {
+            margin-bottom: 32px;
+        }
+        .btn-primary {
+            display: inline-block;
+            padding: 10px 22px;
+            background-color: #4a90e2;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+        .btn-primary:hover { background-color: #357abd; }
+
+        /* Sections */
+        .section { margin-bottom: 32px; }
+        .section-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 12px;
+        }
+
+        .table-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        thead { background-color: #f7f9fc; border-bottom: 2px solid #e8ecf0; }
+        thead th {
+            text-align: left;
+            padding: 12px 16px;
+            color: #555;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+        tbody tr { border-bottom: 1px solid #f0f2f5; }
+        tbody tr:last-child { border-bottom: none; }
+        tbody tr:hover { background-color: #fafbfd; }
+        tbody td { padding: 12px 16px; color: #444; vertical-align: middle; }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+        .badge-pending  { background-color: #fff7e6; color: #b87d00; border: 1px solid #ffe0a0; }
+        .badge-approved { background-color: #e6f9f0; color: #1e7d4f; border: 1px solid #a8e6c7; }
+        .badge-rejected { background-color: #fff0f0; color: #c0392b; border: 1px solid #f5b7b1; }
+
+        .empty-note {
+            padding: 30px 20px;
+            text-align: center;
+            color: #aaa;
+            font-size: 13px;
+        }
+
+        /* Progress bar */
+        .progress-wrap { margin-top: 10px; background: #e8ecf0; border-radius: 6px; height: 6px; }
+        .progress-bar  { height: 6px; border-radius: 6px; background-color: #4a90e2; }
     </style>
 </head>
 <body>
@@ -58,9 +158,101 @@
             <a href="{{ url_for('employee.employee_logout') }}" class="logout">Logout</a>
         </nav>
     </div>
+
     <div class="content">
-        <h2>Employee Dashboard</h2>
-        <p>Leave request features coming soon.</p>
+        <div class="page-header">
+            <h2>Dashboard</h2>
+            <p>Your leave overview for {{ now_year }}.</p>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="cards">
+            <div class="card green">
+                <div class="card-label">Days Remaining</div>
+                <div class="card-value">{{ days_remaining }}</div>
+                <div class="card-sub">out of {{ annual_days }} annual days</div>
+                <div class="progress-wrap">
+                    <div class="progress-bar" style="width: {{ ((annual_days - days_remaining) / annual_days * 100)|int }}%;"></div>
+                </div>
+            </div>
+            <div class="card blue">
+                <div class="card-label">Days Used</div>
+                <div class="card-value">{{ days_used }}</div>
+                <div class="card-sub">approved this year</div>
+            </div>
+            <div class="card orange">
+                <div class="card-label">Pending Requests</div>
+                <div class="card-value">{{ pending_count }}</div>
+                <div class="card-sub">awaiting admin review</div>
+            </div>
+        </div>
+
+        <!-- Quick Action -->
+        <div class="quick-action">
+            <a href="{{ url_for('employee.request_leave') }}" class="btn-primary">+ Request Leave</a>
+        </div>
+
+        <!-- Recent Requests -->
+        <div class="section">
+            <div class="section-title">Recent Requests</div>
+            <div class="table-card">
+                {% if recent_requests %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th>Days</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for req in recent_requests %}
+                        <tr>
+                            <td style="color:#aaa;">{{ req.id }}</td>
+                            <td>{{ req.start_date }}</td>
+                            <td>{{ req.end_date }}</td>
+                            <td>{{ req.leave_days }}</td>
+                            <td><span class="badge badge-{{ req.status }}">{{ req.status }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="empty-note">No requests submitted yet.</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Upcoming Approved Leaves -->
+        <div class="section">
+            <div class="section-title">Upcoming Approved Leaves</div>
+            <div class="table-card">
+                {% if upcoming_leaves %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th>Days</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for leave in upcoming_leaves %}
+                        <tr>
+                            <td>{{ leave.start_date }}</td>
+                            <td>{{ leave.end_date }}</td>
+                            <td>{{ leave.leave_days }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="empty-note">No upcoming approved leaves.</div>
+                {% endif %}
+            </div>
+        </div>
     </div>
 </body>
 </html>

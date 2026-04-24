@@ -135,7 +135,68 @@ def employee_dashboard():
     if not session.get('employee_id'):
         flash('You must be logged in to access that page.')
         return redirect(url_for('employee.employee_login'))
-    return render_template('employee_dashboard.html', username=session.get('employee_username'))
+
+    user_id = session['employee_id']
+    year = date.today().year
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    # Summary counts
+    cursor.execute(
+        "SELECT COUNT(*) FROM leave_requests WHERE user_id = ? AND status = 'pending'",
+        (user_id,)
+    )
+    pending_count = cursor.fetchone()[0]
+
+    cursor.execute(
+        """SELECT COALESCE(SUM(leave_days), 0) FROM leave_requests
+           WHERE user_id = ? AND strftime('%Y', start_date) = ? AND status = 'approved'""",
+        (user_id, str(year))
+    )
+    days_used = cursor.fetchone()[0]
+
+    # Recent 5 requests
+    cursor.execute(
+        """SELECT id, start_date, end_date, leave_days, reason, status
+           FROM leave_requests WHERE user_id = ? ORDER BY id DESC LIMIT 5""",
+        (user_id,)
+    )
+    recent_rows = cursor.fetchall()
+
+    # Upcoming approved leaves (start_date >= today)
+    cursor.execute(
+        """SELECT start_date, end_date, leave_days FROM leave_requests
+           WHERE user_id = ? AND status = 'approved' AND start_date >= ?
+           ORDER BY start_date ASC""",
+        (user_id, date.today().isoformat())
+    )
+    upcoming_rows = cursor.fetchall()
+    conn.close()
+
+    remaining = get_remaining_days(user_id, year)
+
+    recent_requests = [
+        {'id': r[0], 'start_date': r[1], 'end_date': r[2],
+         'leave_days': r[3], 'reason': r[4] or '—', 'status': r[5]}
+        for r in recent_rows
+    ]
+    upcoming_leaves = [
+        {'start_date': r[0], 'end_date': r[1], 'leave_days': r[2]}
+        for r in upcoming_rows
+    ]
+
+    return render_template(
+        'employee_dashboard.html',
+        username=session.get('employee_username'),
+        days_used=days_used,
+        days_remaining=remaining,
+        pending_count=pending_count,
+        annual_days=ANNUAL_LEAVE_DAYS,
+        recent_requests=recent_requests,
+        upcoming_leaves=upcoming_leaves,
+        now_year=year,
+    )
 
 
 @employee_bp.route('/employee/request-leave', methods=['GET', 'POST'])
