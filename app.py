@@ -47,7 +47,40 @@ def dashboard():
     if not session.get('admin'):
         flash('You must be logged in as admin to access that page.')
         return redirect(url_for('login'))
-    return render_template('dashboard.html')
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT COUNT(*) FROM users WHERE role = 'employee'")
+    total_employees = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM leave_requests WHERE status = 'pending'")
+    pending_count = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM leave_requests WHERE status = 'approved'")
+    approved_count = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM leave_requests WHERE status = 'rejected'")
+    rejected_count = cursor.fetchone()[0]
+
+    cursor.execute('''
+        SELECT lr.id, u.full_name, u.username, lr.start_date, lr.end_date,
+               lr.leave_days, lr.reason, lr.status
+        FROM leave_requests lr
+        JOIN users u ON lr.user_id = u.id
+        ORDER BY lr.id DESC
+        LIMIT 5
+    ''')
+    recent_requests = cursor.fetchall()
+    conn.close()
+
+    return render_template('dashboard.html',
+        total_employees=total_employees,
+        pending_count=pending_count,
+        approved_count=approved_count,
+        rejected_count=rejected_count,
+        recent_requests=recent_requests
+    )
 
 
 @app.route('/admin/leave-requests')
