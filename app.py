@@ -11,6 +11,15 @@ app.register_blueprint(employee_bp)
 init_db()
 
 
+@app.route('/')
+def index():
+    if session.get('admin'):
+        return redirect(url_for('dashboard'))
+    if session.get('user_id'):
+        return redirect(url_for('employee.employee_dashboard'))
+    return render_template('index.html')
+
+
 @app.route('/admin/login', methods=['GET', 'POST'])
 def login():
     error = None
