@@ -59,7 +59,7 @@ def leave_requests():
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute('''
-        SELECT lr.id, u.username, lr.start_date, lr.end_date,
+        SELECT lr.id, u.full_name, u.username, lr.start_date, lr.end_date,
                lr.leave_days, lr.reason, lr.status
         FROM leave_requests lr
         JOIN users u ON lr.user_id = u.id

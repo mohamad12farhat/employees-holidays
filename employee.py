@@ -104,11 +104,14 @@ def employee_register():
     error = None
     success = None
     if request.method == 'POST':
+        full_name = request.form['full_name'].strip()
         email = request.form['email']
         password = request.form['password']
         confirm_password = request.form['confirm_password']
 
-        if password != confirm_password:
+        if not full_name:
+            error = 'Full name is required.'
+        elif password != confirm_password:
             error = 'Passwords do not match.'
         else:
             conn = sqlite3.connect(DB_PATH)
@@ -120,8 +123,8 @@ def employee_register():
                 conn.close()
             else:
                 cursor.execute(
-                    'INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
-                    (email, password, 'employee')
+                    'INSERT INTO users (username, password, role, full_name) VALUES (?, ?, ?, ?)',
+                    (email, password, 'employee', full_name)
                 )
                 conn.commit()
                 conn.close()
