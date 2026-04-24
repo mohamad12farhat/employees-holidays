@@ -13,6 +13,9 @@
         body {
             font-family: Arial, sans-serif;
             background-color: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
 
         /* Navbar */
@@ -63,10 +66,10 @@
 
         /* Page content */
         .content {
+            flex: 1;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: calc(100vh - 56px);
         }
 
         .dashboard-container {
@@ -87,6 +90,28 @@
             color: #555;
             font-size: 15px;
         }
+
+        .footer {
+            background-color: #1a252f;
+            color: #8a9bb0;
+            padding: 28px 40px 20px;
+        }
+        .footer-inner {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #2c3e50;
+            gap: 40px;
+        }
+        .footer-brand-name { color: #fff; font-size: 15px; font-weight: bold; margin-bottom: 4px; }
+        .footer-tagline { font-size: 12px; color: #607080; }
+        .footer-links { display: flex; gap: 24px; padding-top: 2px; }
+        .footer-links a {
+            color: #8a9bb0; text-decoration: none; font-size: 13px; transition: color 0.2s;
+        }
+        .footer-links a:hover { color: #fff; }
+        .footer-copy { text-align: center; padding-top: 16px; font-size: 12px; color: #506070; }
     </style>
 </head>
 <body>
@@ -106,6 +131,21 @@
             <p>You are logged in as Admin.</p>
         </div>
     </div>
+
+    <footer class="footer">
+        <div class="footer-inner">
+            <div>
+                <div class="footer-brand-name">Employee Holiday System</div>
+                <div class="footer-tagline">Admin Panel &mdash; Leave Management</div>
+            </div>
+            <nav class="footer-links">
+                <a href="/admin/dashboard">Dashboard</a>
+                <a href="/admin/leave-requests">Leave Requests</a>
+                <a href="/admin/logout">Logout</a>
+            </nav>
+        </div>
+        <div class="footer-copy">&copy; 2026 Employee Holiday System. All rights reserved.</div>
+    </footer>
 
 </body>
 </html>
