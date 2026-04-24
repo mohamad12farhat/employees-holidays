@@ -5,7 +5,7 @@
     <title>Employee Login</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: Arial, sans-serif; background-color: #f0f2f5; }
+        body { font-family: Arial, sans-serif; background-color: #f0f2f5; min-height: 100vh; display: flex; flex-direction: column; }
 
         .navbar {
             background-color: #4a90e2;
@@ -29,10 +29,20 @@
         .nav-links a:hover { background-color: rgba(255, 255, 255, 0.2); }
 
         .page-body {
+            flex: 1;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: calc(100vh - 54px);
+            padding: 40px 20px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 18px;
+            font-size: 12px;
+            color: #ccc;
+            background-color: #1e4d8c;
+            margin-top: auto;
         }
 
         .login-container {
@@ -162,5 +172,7 @@
             </div>
         </div>
     </div>
+
+    <footer>&copy; 2026 Employee Holiday System &mdash; All rights reserved.</footer>
 </body>
 </html>
