@@ -2,6 +2,7 @@ import sqlite3
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from database import init_db, DB_PATH
 from employee import employee_bp
+from mail_utils import notify_employee_status_change
 
 app = Flask(__name__)
 app.secret_key = 'secret_key'
@@ -113,10 +114,37 @@ def update_request_status(request_id):
         flash('Invalid status.', 'danger')
         return redirect(url_for('leave_requests'))
     conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute('UPDATE leave_requests SET status = ? WHERE id = ?', (new_status, request_id))
     conn.commit()
+
+    # Fetch request + employee details to send notification
+    cursor.execute(
+        '''SELECT lr.start_date, lr.end_date, lr.leave_days,
+                  u.username AS email, u.full_name
+           FROM leave_requests lr
+           JOIN users u ON lr.user_id = u.id
+           WHERE lr.id = ?''',
+        (request_id,)
+    )
+    row = cursor.fetchone()
     conn.close()
+
+    if row and new_status in ('approved', 'rejected'):
+        try:
+            notify_employee_status_change(
+                employee_email=row['email'],
+                full_name=row['full_name'] or row['email'],
+                status=new_status,
+                start_date=row['start_date'],
+                end_date=row['end_date'],
+                leave_days=row['leave_days'],
+            )
+        except Exception as e:
+            app.logger.error('Email notification failed: %s', e)
+            flash(f'Status updated but email notification failed: {e}', 'warning')
+
     flash(f'Request #{request_id} status updated to {new_status}.', 'success')
     return redirect(url_for('leave_requests'))
 
