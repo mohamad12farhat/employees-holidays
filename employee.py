@@ -1,8 +1,9 @@
 import sqlite3
 from datetime import date, timedelta
-from flask import Blueprint, render_template, request, redirect, url_for, session, flash
+from flask import Blueprint, render_template, request, redirect, url_for, session, flash, current_app
 from holidays import get_lebanon_holidays
 from database import DB_PATH
+from mail_utils import notify_admin_new_request
 
 employee_bp = Blueprint('employee', __name__)
 
@@ -312,7 +313,22 @@ def request_leave():
             (user_id, start_str, end_str, reason, leave_days)
         )
         conn.commit()
+
+        cursor.execute('SELECT full_name FROM users WHERE id = ?', (user_id,))
+        row = cursor.fetchone()
         conn.close()
+
+        try:
+            notify_admin_new_request(
+                full_name=row[0] if row and row[0] else session.get('employee_email', ''),
+                employee_email=session.get('employee_email', ''),
+                start_date=start_str,
+                end_date=end_str,
+                leave_days=leave_days,
+                reason=reason,
+            )
+        except Exception as e:
+            current_app.logger.error('Admin email notification failed: %s', e)
 
         flash(
             f'Leave request submitted! {leave_days} day(s) of leave requested. '

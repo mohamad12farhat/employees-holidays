@@ -72,3 +72,55 @@ def notify_employee_status_change(
     </div>
     """
     _send(employee_email, subject, body)
+
+
+def notify_admin_new_request(
+    full_name: str,
+    employee_email: str,
+    start_date: str,
+    end_date: str,
+    leave_days: int,
+    reason: str,
+) -> None:
+    subject = f'New Leave Request from {full_name}'
+    body = f"""
+    <div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;
+                border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;">
+      <div style="background:#1e4d8c;padding:20px 24px;">
+        <h2 style="color:white;margin:0;">Employee Holiday System</h2>
+      </div>
+      <div style="padding:28px 24px;">
+        <p style="color:#333;">A new leave request has been submitted and is awaiting your review.</p>
+        <table style="width:100%;border-collapse:collapse;margin:20px 0;">
+          <tr style="background:#f7f9fc;">
+            <td style="padding:10px 14px;color:#555;font-size:13px;">Employee</td>
+            <td style="padding:10px 14px;color:#333;font-weight:600;">{full_name}</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 14px;color:#555;font-size:13px;">Email</td>
+            <td style="padding:10px 14px;color:#333;font-weight:600;">{employee_email}</td>
+          </tr>
+          <tr style="background:#f7f9fc;">
+            <td style="padding:10px 14px;color:#555;font-size:13px;">Start Date</td>
+            <td style="padding:10px 14px;color:#333;font-weight:600;">{start_date}</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 14px;color:#555;font-size:13px;">End Date</td>
+            <td style="padding:10px 14px;color:#333;font-weight:600;">{end_date}</td>
+          </tr>
+          <tr style="background:#f7f9fc;">
+            <td style="padding:10px 14px;color:#555;font-size:13px;">Working Days</td>
+            <td style="padding:10px 14px;color:#333;font-weight:600;">{leave_days}</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 14px;color:#555;font-size:13px;">Reason</td>
+            <td style="padding:10px 14px;color:#333;">{reason or '—'}</td>
+          </tr>
+        </table>
+        <p style="color:#888;font-size:12px;margin-top:24px;">
+          &copy; 2026 Employee Holiday System
+        </p>
+      </div>
+    </div>
+    """
+    _send(ADMIN_EMAIL, subject, body)
