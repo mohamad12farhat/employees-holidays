@@ -1,15 +1,14 @@
+import os
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from dotenv import load_dotenv
 
-# -------------------------------------------------------------------
-# Fill in your Gmail credentials below.
-# Use a Gmail App Password (not your real password):
-# Google Account → Security → 2-Step Verification → App Passwords
-# -------------------------------------------------------------------
-MAIL_SENDER  = 'your-email@gmail.com'   # the Gmail account that sends emails
-MAIL_PASSWORD = 'your-app-password'     # 16-character Gmail App Password
-ADMIN_EMAIL  = 'admin@gmail.com'        # admin receives new-request alerts
+load_dotenv()
+
+MAIL_SENDER   = os.environ['MAIL_SENDER']
+MAIL_PASSWORD = os.environ['MAIL_PASSWORD']
+ADMIN_EMAIL   = os.environ['ADMIN_EMAIL']
 
 
 def _send(to: str, subject: str, body: str) -> None:

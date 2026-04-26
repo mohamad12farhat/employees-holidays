@@ -141,8 +141,9 @@ def update_request_status(request_id):
                 end_date=row['end_date'],
                 leave_days=row['leave_days'],
             )
-        except Exception:
-            pass  # Don't break the app if email fails
+        except Exception as e:
+            app.logger.error('Email notification failed: %s', e)
+            flash(f'Status updated but email notification failed: {e}', 'warning')
 
     flash(f'Request #{request_id} status updated to {new_status}.', 'success')
     return redirect(url_for('leave_requests'))
