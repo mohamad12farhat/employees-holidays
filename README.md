@@ -15,6 +15,10 @@ A web-based leave management system built with Flask, allowing employees to requ
 - View and manage all leave requests (approve / reject)
 - See employee full name and email on each request
 - Receive an email notification when an employee submits a new leave request
+- Manage employees — view the full employee list with leave usage per year
+- Deactivate an employee account (with an optional reason) — employee receives an email notification
+- Reactivate an employee account — employee receives an email notification
+- Deactivated employees are blocked from logging in
 
 ## Tech Stack
 
