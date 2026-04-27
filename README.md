@@ -9,6 +9,7 @@ A web-based leave management system built with Flask, allowing employees to requ
 - Request leave with automatic working-day calculation (weekends and Lebanese public holidays excluded)
 - View personal leave history and remaining balance (15 days/year)
 - Receive an email notification when their leave request is approved or rejected
+- View a monthly **team leave calendar** showing all approved leaves across the team, with prev/next month navigation, today highlighted, and color-coded indicators for own vs colleague leaves
 
 **Admin**
 - Dashboard with live stats — total employees, pending, approved, and rejected requests
