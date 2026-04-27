@@ -1,8 +1,9 @@
 import sqlite3
+from datetime import date
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from database import init_db, DB_PATH
 from employee import employee_bp
-from mail_utils import notify_employee_status_change
+from mail_utils import notify_employee_status_change, notify_employee_deactivated, notify_employee_reactivated
 
 app = Flask(__name__)
 app.secret_key = 'secret_key'
@@ -147,6 +148,68 @@ def update_request_status(request_id):
 
     flash(f'Request #{request_id} status updated to {new_status}.', 'success')
     return redirect(url_for('leave_requests'))
+
+
+@app.route('/admin/employees')
+def manage_employees():
+    if not session.get('admin'):
+        flash('You must be logged in as admin to access that page.')
+        return redirect(url_for('login'))
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    current_year = str(date.today().year)
+    cursor.execute('''
+        SELECT u.id, u.username, u.full_name, u.is_active,
+               COALESCE(SUM(
+                   CASE WHEN lr.status IN ('pending', 'approved')
+                        AND strftime('%Y', lr.start_date) = ?
+                   THEN lr.leave_days ELSE 0 END
+               ), 0) AS days_used
+        FROM users u
+        LEFT JOIN leave_requests lr ON lr.user_id = u.id
+        WHERE u.role = 'employee'
+        GROUP BY u.id
+        ORDER BY u.full_name
+    ''', (current_year,))
+    employees = cursor.fetchall()
+    conn.close()
+    return render_template('admin_employees.html', employees=employees, current_year=int(current_year))
+
+
+@app.route('/admin/employees/<int:emp_id>/toggle-status', methods=['POST'])
+def toggle_employee_status(emp_id):
+    if not session.get('admin'):
+        return redirect(url_for('login'))
+    reason = request.form.get('reason', '').strip()
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute(
+        'SELECT is_active, username, full_name FROM users WHERE id = ? AND role = "employee"',
+        (emp_id,)
+    )
+    row = cursor.fetchone()
+    if row:
+        new_status = 0 if row[0] else 1
+        cursor.execute('UPDATE users SET is_active = ? WHERE id = ?', (new_status, emp_id))
+        conn.commit()
+        emp_email = row[1]
+        emp_name  = row[2] or row[1]
+        label = 'reactivated' if new_status else 'deactivated'
+        flash(f'Employee account {label} successfully.', 'success')
+        try:
+            if new_status == 0:
+                notify_employee_deactivated(emp_email, emp_name, reason)
+            else:
+                notify_employee_reactivated(emp_email, emp_name)
+        except Exception as e:
+            app.logger.error('Email notification failed: %s', e)
+            flash(f'Account {label} but email notification failed: {e}', 'warning')
+    else:
+        flash('Employee not found.', 'danger')
+    conn.close()
+    return redirect(url_for('manage_employees'))
+
 
 
 @app.route('/admin/logout')

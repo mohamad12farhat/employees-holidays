@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Manage Employees — Admin</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background-color: #2c3e50;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            height: 56px;
+        }
+        .navbar .brand { color: #fff; font-size: 18px; font-weight: bold; text-decoration: none; }
+        .navbar ul { list-style: none; display: flex; gap: 8px; }
+        .navbar ul li a {
+            color: #ccd6e0; text-decoration: none; padding: 8px 14px;
+            border-radius: 4px; font-size: 14px; transition: background-color 0.2s;
+        }
+        .navbar ul li a:hover { background-color: #3d5166; color: #fff; }
+        .navbar ul li a.active { background-color: #3d5166; color: #fff; }
+        .navbar ul li a.logout { color: #e74c3c; }
+        .navbar ul li a.logout:hover { background-color: #e74c3c; color: #fff; }
+
+        .content { flex: 1; padding: 40px; }
+
+        .page-header { margin-bottom: 24px; }
+        .page-header h2 { color: #333; font-size: 22px; margin-bottom: 4px; }
+        .page-header p { color: #888; font-size: 13px; }
+
+        .alert {
+            padding: 10px 14px; border-radius: 6px;
+            font-size: 13px; margin-bottom: 20px;
+        }
+        .alert-success { background-color: #e6f9f0; color: #1e7d4f; border: 1px solid #a8e6c7; }
+        .alert-danger  { background-color: #fff0f0; color: #c0392b; border: 1px solid #f5b7b1; }
+        .alert-warning { background-color: #fff7e6; color: #7a5200; border: 1px solid #ffe0a0; }
+
+        .card {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+            overflow: hidden;
+        }
+
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        thead { background-color: #f7f9fc; border-bottom: 2px solid #e8ecf0; }
+        thead th {
+            text-align: left; padding: 13px 18px; color: #555;
+            font-size: 11px; text-transform: uppercase;
+            letter-spacing: 0.05em; font-weight: 600;
+        }
+        tbody tr { border-bottom: 1px solid #f0f2f5; transition: background-color 0.15s; }
+        tbody tr:last-child { border-bottom: none; }
+        tbody tr:hover { background-color: #fafbfd; }
+        tbody tr.inactive { opacity: 0.6; }
+        tbody td { padding: 13px 18px; color: #444; vertical-align: middle; }
+
+        .employee-name { font-weight: 600; color: #333; }
+        .employee-email { font-size: 12px; color: #888; }
+
+        .badge {
+            display: inline-block; padding: 3px 10px; border-radius: 12px;
+            font-size: 12px; font-weight: 600;
+        }
+        .badge-active   { background-color: #e6f9f0; color: #1e7d4f; border: 1px solid #a8e6c7; }
+        .badge-inactive { background-color: #f5f5f5; color: #888; border: 1px solid #ddd; }
+
+        .days-bar-wrap { display: flex; align-items: center; gap: 8px; }
+        .days-bar {
+            flex: 1; height: 6px; background-color: #e8ecf0;
+            border-radius: 3px; overflow: hidden; min-width: 60px;
+        }
+        .days-bar-fill { height: 100%; border-radius: 3px; background-color: #2c3e50; }
+        .days-bar-fill.warn { background-color: #e67e22; }
+        .days-bar-fill.over { background-color: #e74c3c; }
+        .days-text { font-size: 12px; color: #666; white-space: nowrap; }
+
+        .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+        .btn {
+            display: inline-block; padding: 5px 12px; border-radius: 5px;
+            font-size: 12px; font-weight: 600; cursor: pointer;
+            border: none; text-decoration: none; transition: opacity 0.15s;
+        }
+        .btn:hover { opacity: 0.82; }
+        .btn-deact { background-color: #e67e22; color: #fff; }
+        .btn-react { background-color: #27ae60; color: #fff; }
+
+        .empty-state { text-align: center; padding: 50px 20px; color: #aaa; font-size: 14px; }
+
+        /* Modal */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.45); z-index: 100;
+            align-items: center; justify-content: center;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal {
+            background: #fff; border-radius: 10px; padding: 30px;
+            width: 100%; max-width: 380px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+        }
+        .modal h3 { font-size: 16px; color: #333; margin-bottom: 6px; }
+        .modal p  { font-size: 13px; color: #888; margin-bottom: 20px; }
+        .modal label { display: block; font-size: 13px; color: #555; margin-bottom: 6px; font-weight: 600; }
+        .modal input[type="password"] {
+            width: 100%; padding: 9px 12px; border: 1px solid #d0d7de;
+            border-radius: 6px; font-size: 14px; margin-bottom: 18px; outline: none;
+        }
+        .modal input[type="password"]:focus { border-color: #2c3e50; }
+        .modal textarea:focus { border-color: #2c3e50; outline: none; }
+        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+        .btn-cancel-modal {
+            padding: 7px 16px; border-radius: 5px; border: 1px solid #d0d7de;
+            background: #fff; font-size: 13px; cursor: pointer;
+        }
+        .btn-confirm-reset {
+            padding: 7px 16px; border-radius: 5px; border: none;
+            background: #2c3e50; color: #fff; font-size: 13px;
+            font-weight: 600; cursor: pointer;
+        }
+
+        .footer { background-color: #1a252f; color: #8a9bb0; padding: 28px 40px 20px; }
+        .footer-inner {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            padding-bottom: 20px; border-bottom: 1px solid #2c3e50; gap: 40px;
+        }
+        .footer-brand-name { color: #fff; font-size: 15px; font-weight: bold; margin-bottom: 4px; }
+        .footer-tagline { font-size: 12px; color: #607080; }
+        .footer-links { display: flex; gap: 24px; padding-top: 2px; }
+        .footer-links a { color: #8a9bb0; text-decoration: none; font-size: 13px; transition: color 0.2s; }
+        .footer-links a:hover { color: #fff; }
+        .footer-copy { text-align: center; padding-top: 16px; font-size: 12px; color: #506070; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <a class="brand" href="/admin/dashboard">Admin Panel</a>
+    <ul>
+        <li><a href="/admin/dashboard">Dashboard</a></li>
+        <li><a href="/admin/leave-requests">Leave Requests</a></li>
+        <li><a href="/admin/employees" class="active">Employees</a></li>
+        <li><a class="logout" href="/admin/logout">Logout</a></li>
+    </ul>
+</nav>
+
+<div class="content">
+
+    <div class="page-header">
+        <h2>Manage Employees</h2>
+        <p>View, edit, deactivate, or reset passwords for all employee accounts.</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+
+    <div class="card">
+        {% if employees %}
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Employee</th>
+                    <th>Status</th>
+                    <th>Leave Used ({{ current_year }})</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for emp in employees %}
+                {% set pct = [(emp['days_used'] / 15 * 100) | int, 100] | min %}
+                <tr class="{{ 'inactive' if not emp['is_active'] else '' }}">
+                    <td style="color:#aaa;">{{ emp['id'] }}</td>
+                    <td>
+                        <div class="employee-name">{{ emp['full_name'] or emp['username'].split('@')[0] | title }}</div>
+                        <div class="employee-email">{{ emp['username'] }}</div>
+                    </td>
+                    <td>
+                        {% if emp['is_active'] %}
+                            <span class="badge badge-active">Active</span>
+                        {% else %}
+                            <span class="badge badge-inactive">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="days-bar-wrap">
+                            <div class="days-bar">
+                                <div class="days-bar-fill {{ 'over' if pct >= 100 else ('warn' if pct >= 70 else '') }}"
+                                     style="width: {{ pct }}%;"></div>
+                            </div>
+                            <span class="days-text">{{ emp['days_used'] }} / 15</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="actions">
+                            {% if emp['is_active'] %}
+                                <button type="button" class="btn btn-deact"
+                                        onclick="openDeactivateModal({{ emp['id'] }}, '{{ emp['full_name'] or emp['username'] }}')">
+                                    Deactivate
+                                </button>
+                            {% else %}
+                                <form method="POST" action="/admin/employees/{{ emp['id'] }}/toggle-status"
+                                      style="display:inline;"
+                                      onsubmit="return confirm('Reactivate {{ emp['full_name'] or emp['username'] }}? An email will be sent to them.')">
+                                    <button type="submit" class="btn btn-react">Reactivate</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">No employees registered yet.</div>
+        {% endif %}
+    </div>
+
+</div>
+
+<!-- Deactivate Modal -->
+<div class="modal-overlay" id="deactivateModal">
+    <div class="modal">
+        <h3>Deactivate Account</h3>
+        <p id="deactivateSubtitle">The employee will be notified by email.</p>
+        <form id="deactivateForm" method="POST">
+            <label for="deactivate_reason">Reason <span style="color:#aaa;font-weight:400;">(optional)</span></label>
+            <textarea name="reason" id="deactivate_reason"
+                      placeholder="e.g. Contract ended, on leave of absence..."
+                      style="width:100%;padding:9px 12px;border:1px solid #d0d7de;border-radius:6px;
+                             font-size:14px;margin-bottom:18px;resize:vertical;min-height:80px;
+                             outline:none;font-family:inherit;"></textarea>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel-modal" onclick="closeDeactivateModal()">Cancel</button>
+                <button type="submit" style="padding:7px 16px;border-radius:5px;border:none;
+                        background:#e67e22;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">
+                    Deactivate &amp; Notify
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+<footer class="footer">
+    <div class="footer-inner">
+        <div>
+            <div class="footer-brand-name">Employee Holiday System</div>
+            <div class="footer-tagline">Admin Panel &mdash; Leave Management</div>
+        </div>
+        <nav class="footer-links">
+            <a href="/admin/dashboard">Dashboard</a>
+            <a href="/admin/leave-requests">Leave Requests</a>
+            <a href="/admin/employees">Employees</a>
+            <a href="/admin/logout">Logout</a>
+        </nav>
+    </div>
+    <div class="footer-copy">&copy; 2026 Employee Holiday System. All rights reserved.</div>
+</footer>
+
+<script>
+    function openDeactivateModal(empId, empName) {
+        document.getElementById('deactivateSubtitle').textContent = 'Deactivate ' + empName + '? They will be notified by email.';
+        document.getElementById('deactivateForm').action = '/admin/employees/' + empId + '/toggle-status';
+        document.getElementById('deactivate_reason').value = '';
+        document.getElementById('deactivateModal').classList.add('open');
+        document.getElementById('deactivate_reason').focus();
+    }
+    function closeDeactivateModal() {
+        document.getElementById('deactivateModal').classList.remove('open');
+    }
+    document.getElementById('deactivateModal').addEventListener('click', function(e) {
+        if (e.target === this) closeDeactivateModal();
+    });
+
+</script>
+
+</body>
+</html>
