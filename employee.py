@@ -1,4 +1,5 @@
 import sqlite3
+import calendar as cal_module
 from datetime import date, timedelta
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, current_app
 from holidays import get_lebanon_holidays
@@ -399,6 +400,78 @@ def cancel_request(request_id):
         conn.close()
         flash('Leave request cancelled successfully.', 'success')
     return redirect(url_for('employee.view_requests'))
+
+
+@employee_bp.route('/employee/calendar')
+def leave_calendar():
+    if not session.get('employee_id'):
+        flash('You must be logged in to access that page.')
+        return redirect(url_for('employee.employee_login'))
+
+    today = date.today()
+    try:
+        month = int(request.args.get('month', today.month))
+        year  = int(request.args.get('year',  today.year))
+        if not (1 <= month <= 12):
+            month, year = today.month, today.year
+    except (ValueError, TypeError):
+        month, year = today.month, today.year
+
+    first_day = date(year, month, 1)
+    last_day  = date(year, month, cal_module.monthrange(year, month)[1])
+
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute(
+        '''SELECT lr.start_date, lr.end_date, u.full_name, u.id AS user_id
+           FROM leave_requests lr
+           JOIN users u ON lr.user_id = u.id
+           WHERE lr.status = 'approved'
+             AND lr.start_date <= ?
+             AND lr.end_date   >= ?
+           ORDER BY u.full_name''',
+        (last_day.isoformat(), first_day.isoformat())
+    )
+    leaves = cursor.fetchall()
+    conn.close()
+
+    current_user_id = session['employee_id']
+    day_map = {}
+    for leave in leaves:
+        start = date.fromisoformat(leave['start_date'])
+        end   = date.fromisoformat(leave['end_date'])
+        cur   = max(start, first_day)
+        while cur <= min(end, last_day):
+            if cur.weekday() < 5:
+                d = cur.day
+                if d not in day_map:
+                    day_map[d] = []
+                day_map[d].append({
+                    'name':    leave['full_name'] or 'Unknown',
+                    'is_self': leave['user_id'] == current_user_id,
+                })
+            cur += timedelta(days=1)
+
+    prev_month = month - 1 if month > 1 else 12
+    prev_year  = year if month > 1 else year - 1
+    next_month = month + 1 if month < 12 else 1
+    next_year  = year if month < 12 else year + 1
+
+    return render_template(
+        'leave_calendar.html',
+        username=session.get('employee_username'),
+        month_name=first_day.strftime('%B %Y'),
+        month=month,
+        year=year,
+        weeks=cal_module.monthcalendar(year, month),
+        day_map=day_map,
+        today=today,
+        prev_month=prev_month,
+        prev_year=prev_year,
+        next_month=next_month,
+        next_year=next_year,
+    )
 
 
 @employee_bp.route('/employee/logout')
