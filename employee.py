@@ -85,16 +85,19 @@ def employee_login():
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute(
-            'SELECT id FROM users WHERE username = ? AND password = ? AND role = ?',
+            'SELECT id, is_active FROM users WHERE username = ? AND password = ? AND role = ?',
             (email, password, 'employee')
         )
         user = cursor.fetchone()
         conn.close()
         if user:
-            session['employee_id'] = user[0]
-            session['employee_email'] = email
-            session['employee_username'] = email.split('@')[0]
-            return redirect(url_for('employee.employee_dashboard'))
+            if not user[1]:
+                error = 'Your account has been deactivated. Please contact the admin.'
+            else:
+                session['employee_id'] = user[0]
+                session['employee_email'] = email
+                session['employee_username'] = email.split('@')[0]
+                return redirect(url_for('employee.employee_dashboard'))
         else:
             error = 'Invalid email or password.'
     return render_template('employee_login.html', error=error)

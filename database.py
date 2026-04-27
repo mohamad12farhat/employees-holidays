@@ -37,6 +37,10 @@ def init_db():
         cursor.execute('ALTER TABLE users ADD COLUMN full_name TEXT NOT NULL DEFAULT ""')
     except Exception:
         pass  # Column already exists
+    try:
+        cursor.execute('ALTER TABLE users ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1')
+    except Exception:
+        pass  # Column already exists
     for col, definition in [('reason', 'TEXT'), ('leave_days', 'INTEGER NOT NULL DEFAULT 0')]:
         try:
             cursor.execute(f'ALTER TABLE leave_requests ADD COLUMN {col} {definition}')
