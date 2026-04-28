@@ -10,6 +10,7 @@ A web-based leave management system built with Flask, allowing employees to requ
 - View personal leave history and remaining balance (15 days/year)
 - Receive an email notification when their leave request is approved or rejected
 - View a monthly **team leave calendar** showing all approved leaves across the team, with prev/next month navigation, today highlighted, and color-coded indicators for own vs colleague leaves
+- **Edit pending requests** — modify the dates and/or reason of a pending leave request before it is reviewed; full validation (quota, overlap, conflict checks) is re-applied on save
 
 **Admin**
 - Dashboard with live stats — total employees, pending, approved, and rejected requests
