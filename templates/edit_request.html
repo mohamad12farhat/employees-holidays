@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Leave Request</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; background-color: #f0f2f5; }
+        .navbar {
+            background-color: #4a90e2;
+            padding: 0 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+            height: 54px;
+        }
+        .navbar .brand { font-weight: bold; font-size: 16px; }
+        .nav-links { display: flex; align-items: center; gap: 8px; height: 100%; }
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 6px 14px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        .nav-links a:hover { background-color: rgba(255, 255, 255, 0.2); }
+        .nav-links a.logout {
+            background-color: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        .nav-links a.logout:hover { background-color: rgba(255, 255, 255, 0.3); }
+
+        .content {
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 32px 36px;
+            width: 100%;
+            max-width: 480px;
+        }
+
+        .card h2 {
+            color: #333;
+            font-size: 20px;
+            margin-bottom: 6px;
+        }
+
+        .card .subtitle {
+            color: #888;
+            font-size: 13px;
+            margin-bottom: 28px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 6px;
+        }
+
+        .form-group input[type="date"],
+        .form-group textarea {
+            width: 100%;
+            padding: 9px 12px;
+            border: 1px solid #d0d5dd;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #333;
+            background-color: #fff;
+            transition: border-color 0.2s;
+            outline: none;
+        }
+
+        .form-group input[type="date"]:focus,
+        .form-group textarea:focus {
+            border-color: #4a90e2;
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.15);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 90px;
+        }
+
+        .date-row {
+            display: flex;
+            gap: 16px;
+        }
+
+        .date-row .form-group {
+            flex: 1;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 10px;
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn-submit:hover { background-color: #357abd; }
+
+        .btn-secondary {
+            display: block;
+            text-align: center;
+            margin-top: 12px;
+            padding: 9px;
+            background-color: #f0f2f5;
+            color: #555;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+        .btn-secondary:hover { background-color: #e0e4ea; }
+
+        .alert {
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+        .alert-success { background-color: #e6f9f0; color: #1e7d4f; border: 1px solid #a8e6c7; }
+        .alert-danger  { background-color: #fff0f0; color: #c0392b; border: 1px solid #f5b7b1; }
+        .alert-warning { background-color: #fffbe6; color: #7d5a00; border: 1px solid #ffe58f; }
+        .btn-warning   { background-color: #e6a817; }
+        .btn-warning:hover { background-color: #c98e10; }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <span class="brand">Welcome, {{ username }}</span>
+        <nav class="nav-links">
+            <a href="{{ url_for('employee.employee_dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('employee.request_leave') }}">Request Leave</a>
+            <a href="{{ url_for('employee.view_requests') }}">View Requests</a>
+            <a href="{{ url_for('employee.leave_calendar') }}">Calendar</a>
+            <a href="{{ url_for('employee.employee_logout') }}" class="logout">Logout</a>
+        </nav>
+    </div>
+
+    <div class="content">
+        <div class="card">
+            <h2>Edit Leave Request #{{ existing.id }}</h2>
+            <p class="subtitle">Weekends and Lebanese public holidays are excluded. You have <strong>{{ remaining }}</strong> of 15 days remaining this year.</p>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endwith %}
+
+            <form method="POST" action="{{ url_for('employee.edit_request', request_id=existing.id) }}">
+                <div class="date-row">
+                    <div class="form-group">
+                        <label for="start_date">Start Date</label>
+                        <input type="date" id="start_date" name="start_date" required
+                               value="{{ form_data.start_date if form_data else existing.start_date }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="end_date">End Date</label>
+                        <input type="date" id="end_date" name="end_date" required
+                               value="{{ form_data.end_date if form_data else existing.end_date }}">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="reason">Reason <span style="font-weight:400;color:#aaa;">(optional)</span></label>
+                    <textarea id="reason" name="reason" placeholder="Briefly describe the reason for your leave...">{{ form_data.reason if form_data else existing.reason }}</textarea>
+                </div>
+
+                {% if pending_conflict %}
+                <div class="alert alert-warning">
+                    One or more of your selected dates overlap with a <strong>pending</strong> request
+                    from another employee. You may still save — the admin will resolve the conflict.
+                    <input type="hidden" name="confirmed" value="1">
+                </div>
+                <div style="display:flex; gap:12px;">
+                    <button type="submit" class="btn-submit btn-warning" style="flex:1;">Save Anyway</button>
+                    <a href="{{ url_for('employee.view_requests') }}" class="btn-submit" style="flex:1; background-color:#aaa; text-align:center; text-decoration:none; line-height:1.6;">Cancel</a>
+                </div>
+                {% else %}
+                <button type="submit" class="btn-submit">Save Changes</button>
+                {% endif %}
+            </form>
+
+            <a href="{{ url_for('employee.view_requests') }}" class="btn-secondary">Back to My Requests</a>
+        </div>
+    </div>
+</body>
+</html>
