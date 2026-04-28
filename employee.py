@@ -34,18 +34,29 @@ def count_working_days(start_date_str, end_date_str):
     return count
 
 
-def get_remaining_days(user_id, year):
+def get_remaining_days(user_id, year, exclude_id=None):
     """Return how many leave days the employee still has for the given year."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute(
-        '''SELECT COALESCE(SUM(leave_days), 0)
-           FROM leave_requests
-           WHERE user_id = ?
-             AND strftime('%Y', start_date) = ?
-             AND status IN ('pending', 'approved')''',
-        (user_id, str(year))
-    )
+    if exclude_id is not None:
+        cursor.execute(
+            '''SELECT COALESCE(SUM(leave_days), 0)
+               FROM leave_requests
+               WHERE user_id = ?
+                 AND strftime('%Y', start_date) = ?
+                 AND status IN ('pending', 'approved')
+                 AND id != ?''',
+            (user_id, str(year), exclude_id)
+        )
+    else:
+        cursor.execute(
+            '''SELECT COALESCE(SUM(leave_days), 0)
+               FROM leave_requests
+               WHERE user_id = ?
+                 AND strftime('%Y', start_date) = ?
+                 AND status IN ('pending', 'approved')''',
+            (user_id, str(year))
+        )
     used = cursor.fetchone()[0]
     conn.close()
     return ANNUAL_LEAVE_DAYS - used
@@ -373,6 +384,151 @@ def view_requests():
     return render_template('view_requests.html',
                            username=session.get('employee_username'),
                            requests=requests_list)
+
+
+@employee_bp.route('/employee/edit-request/<int:request_id>', methods=['GET', 'POST'])
+def edit_request(request_id):
+    if not session.get('employee_id'):
+        flash('You must be logged in to access that page.')
+        return redirect(url_for('employee.employee_login'))
+
+    user_id = session['employee_id']
+    today   = date.today()
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute(
+        'SELECT id, start_date, end_date, reason, status FROM leave_requests WHERE id = ? AND user_id = ?',
+        (request_id, user_id)
+    )
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row:
+        flash('Request not found.', 'danger')
+        return redirect(url_for('employee.view_requests'))
+    if row[4] != 'pending':
+        flash('Only pending requests can be edited.', 'danger')
+        return redirect(url_for('employee.view_requests'))
+
+    existing = {'id': row[0], 'start_date': row[1], 'end_date': row[2], 'reason': row[3] or ''}
+
+    if request.method == 'POST':
+        start_str = request.form.get('start_date', '').strip()
+        end_str   = request.form.get('end_date', '').strip()
+        reason    = request.form.get('reason', '').strip() or None
+
+        if not start_str or not end_str:
+            flash('Please select both a start date and an end date.', 'danger')
+            return render_template('edit_request.html',
+                                   username=session.get('employee_username'),
+                                   existing=existing,
+                                   remaining=get_remaining_days(user_id, today.year, exclude_id=request_id))
+
+        start = date.fromisoformat(start_str)
+        end   = date.fromisoformat(end_str)
+
+        if start < today:
+            flash('Start date cannot be in the past.', 'danger')
+            return render_template('edit_request.html',
+                                   username=session.get('employee_username'),
+                                   existing=existing,
+                                   remaining=get_remaining_days(user_id, today.year, exclude_id=request_id))
+
+        if end < start:
+            flash('End date cannot be before the start date.', 'danger')
+            return render_template('edit_request.html',
+                                   username=session.get('employee_username'),
+                                   existing=existing,
+                                   remaining=get_remaining_days(user_id, today.year, exclude_id=request_id))
+
+        leave_days = count_working_days(start_str, end_str)
+
+        if leave_days == 0:
+            flash('Your selected range contains no working days (all weekends or public holidays).', 'danger')
+            return render_template('edit_request.html',
+                                   username=session.get('employee_username'),
+                                   existing=existing,
+                                   remaining=get_remaining_days(user_id, today.year, exclude_id=request_id))
+
+        # Cross-employee overlap check (excluding self)
+        approved_conflict, pending_conflict = check_date_overlap(user_id, start_str, end_str)
+
+        if approved_conflict:
+            flash(
+                'These dates overlap with an already-approved leave request from another employee. '
+                'Please choose different dates.',
+                'danger'
+            )
+            return render_template('edit_request.html',
+                                   username=session.get('employee_username'),
+                                   existing=existing,
+                                   remaining=get_remaining_days(user_id, today.year, exclude_id=request_id))
+
+        if pending_conflict and not request.form.get('confirmed'):
+            return render_template('edit_request.html',
+                                   username=session.get('employee_username'),
+                                   existing=existing,
+                                   remaining=get_remaining_days(user_id, today.year, exclude_id=request_id),
+                                   pending_conflict=True,
+                                   form_data={'start_date': start_str, 'end_date': end_str, 'reason': reason or ''})
+
+        year      = start.year
+        remaining = get_remaining_days(user_id, year, exclude_id=request_id)
+
+        if leave_days > remaining:
+            flash(
+                f'Not enough leave days. You have {remaining} day(s) left '
+                f'but this request requires {leave_days}.',
+                'danger'
+            )
+            return render_template('edit_request.html',
+                                   username=session.get('employee_username'),
+                                   existing=existing,
+                                   remaining=remaining)
+
+        # Own-overlap check (exclude this request)
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute(
+            '''SELECT id FROM leave_requests
+               WHERE user_id = ?
+                 AND id != ?
+                 AND status IN ('pending', 'approved')
+                 AND start_date <= ?
+                 AND end_date   >= ?''',
+            (user_id, request_id, end_str, start_str)
+        )
+        if cursor.fetchone():
+            conn.close()
+            flash('You already have another leave request that overlaps with these dates.', 'danger')
+            return render_template('edit_request.html',
+                                   username=session.get('employee_username'),
+                                   existing=existing,
+                                   remaining=get_remaining_days(user_id, year, exclude_id=request_id))
+
+        cursor.execute(
+            '''UPDATE leave_requests
+               SET start_date = ?, end_date = ?, reason = ?, leave_days = ?
+               WHERE id = ?''',
+            (start_str, end_str, reason, leave_days, request_id)
+        )
+        conn.commit()
+        conn.close()
+
+        flash(
+            f'Leave request updated! {leave_days} day(s) requested '
+            f'({remaining - leave_days} day(s) remaining for {year}).',
+            'success'
+        )
+        return redirect(url_for('employee.view_requests'))
+
+    # GET
+    remaining = get_remaining_days(user_id, today.year, exclude_id=request_id)
+    return render_template('edit_request.html',
+                           username=session.get('employee_username'),
+                           existing=existing,
+                           remaining=remaining)
 
 
 @employee_bp.route('/employee/cancel-request/<int:request_id>', methods=['POST'])
