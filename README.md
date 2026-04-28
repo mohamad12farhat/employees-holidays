@@ -7,7 +7,7 @@ A web-based leave management system built with Flask, allowing employees to requ
 **Employee**
 - Register and log in with email and password
 - Request leave with automatic working-day calculation (weekends and Lebanese public holidays excluded)
-- View personal leave history and remaining balance (15 days/year)
+- View personal leave history and remaining balance (15 days/year, carry-over included)
 - Receive an email notification when their leave request is approved or rejected
 - View a monthly **team leave calendar** showing all approved leaves across the team, with prev/next month navigation, today highlighted, and color-coded indicators for own vs colleague leaves
 - **Edit pending requests** — modify the dates and/or reason of a pending leave request before it is reviewed; full validation (quota, overlap, conflict checks) is re-applied on save
@@ -17,7 +17,9 @@ A web-based leave management system built with Flask, allowing employees to requ
 - View and manage all leave requests (approve / reject)
 - See employee full name and email on each request
 - Receive an email notification when an employee submits a new leave request
-- Manage employees — view the full employee list with leave usage per year
+- Manage employees — view the full employee list with leave usage, total allocation, and carry-over days per year
+- **Automatic year-end reset** — on January 1st at midnight, unused days (up to 5) carry over to the new year automatically; new-year total is capped at 20 days
+- New employees joining mid-year receive a pro-rated allocation based on their join month
 - Deactivate an employee account (with an optional reason) — employee receives an email notification
 - Reactivate an employee account — employee receives an email notification
 - Deactivated employees are blocked from logging in
@@ -32,7 +34,7 @@ A web-based leave management system built with Flask, allowing employees to requ
 
 ```bash
 # Install dependencies
-pip install flask flask-mail python-dotenv
+pip install flask flask-mail python-dotenv apscheduler
 
 # Create a .env file with your email credentials
 # (copy the example below and fill in your values)
