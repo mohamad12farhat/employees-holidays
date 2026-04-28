@@ -161,7 +161,7 @@
 
     <div class="page-header">
         <h2>Manage Employees</h2>
-        <p>View, edit, deactivate, or reset passwords for all employee accounts.</p>
+        <p>View, deactivate, or reactivate employee accounts. Leave balances reset automatically on January 1st each year.</p>
     </div>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -179,12 +179,13 @@
                     <th>Employee</th>
                     <th>Status</th>
                     <th>Leave Used ({{ current_year }})</th>
+                    <th>Carry-Over</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for emp in employees %}
-                {% set pct = [(emp['days_used'] / 15 * 100) | int, 100] | min %}
+                {% set pct = [(emp['days_used'] / emp['total_days'] * 100) | int, 100] | min %}
                 <tr class="{{ 'inactive' if not emp['is_active'] else '' }}">
                     <td style="color:#aaa;">{{ emp['id'] }}</td>
                     <td>
@@ -204,8 +205,15 @@
                                 <div class="days-bar-fill {{ 'over' if pct >= 100 else ('warn' if pct >= 70 else '') }}"
                                      style="width: {{ pct }}%;"></div>
                             </div>
-                            <span class="days-text">{{ emp['days_used'] }} / 15</span>
+                            <span class="days-text">{{ emp['days_used'] }} / {{ emp['total_days'] }}</span>
                         </div>
+                    </td>
+                    <td>
+                        {% if emp['carry_over_days'] > 0 %}
+                            <span style="color:#27ae60;font-size:12px;font-weight:600;">+{{ emp['carry_over_days'] }} carried</span>
+                        {% else %}
+                            <span style="color:#aaa;font-size:12px;">—</span>
+                        {% endif %}
                     </td>
                     <td>
                         <div class="actions">

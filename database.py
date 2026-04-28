@@ -1,5 +1,6 @@
 import os
 import sqlite3
+from datetime import date
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'database.db')
 
@@ -51,5 +52,22 @@ def init_db():
         cursor.execute('ALTER TABLE leave_requests RENAME COLUMN working_days TO leave_days')
     except Exception:
         pass  # Already renamed or column doesn't exist
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS leave_balance (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id         INTEGER NOT NULL,
+            year            INTEGER NOT NULL,
+            total_days      INTEGER NOT NULL DEFAULT 15,
+            carry_over_days INTEGER NOT NULL DEFAULT 0,
+            UNIQUE(user_id, year),
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        )
+    ''')
+    # Seed existing employees with a full 15-day allocation for the current year
+    current_year = date.today().year
+    cursor.execute('''
+        INSERT OR IGNORE INTO leave_balance (user_id, year, total_days, carry_over_days)
+        SELECT id, ?, 15, 0 FROM users WHERE role = 'employee'
+    ''', (current_year,))
     conn.commit()
     conn.close()
