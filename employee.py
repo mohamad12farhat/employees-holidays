@@ -1,3 +1,4 @@
+import math
 import sqlite3
 import calendar as cal_module
 from datetime import date, timedelta
@@ -34,10 +35,29 @@ def count_working_days(start_date_str, end_date_str):
     return count
 
 
+def get_balance_total(user_id, year):
+    """Return the employee's total leave allocation for the given year."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute(
+        'SELECT total_days FROM leave_balance WHERE user_id = ? AND year = ?',
+        (user_id, year)
+    )
+    row = cursor.fetchone()
+    conn.close()
+    return row[0] if row else ANNUAL_LEAVE_DAYS
+
+
 def get_remaining_days(user_id, year, exclude_id=None):
     """Return how many leave days the employee still has for the given year."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
+    cursor.execute(
+        'SELECT total_days FROM leave_balance WHERE user_id = ? AND year = ?',
+        (user_id, year)
+    )
+    row = cursor.fetchone()
+    total_days = row[0] if row else ANNUAL_LEAVE_DAYS
     if exclude_id is not None:
         cursor.execute(
             '''SELECT COALESCE(SUM(leave_days), 0)
@@ -59,7 +79,7 @@ def get_remaining_days(user_id, year, exclude_id=None):
         )
     used = cursor.fetchone()[0]
     conn.close()
-    return ANNUAL_LEAVE_DAYS - used
+    return total_days - used
 
 
 def check_date_overlap(user_id, start_str, end_str):
@@ -142,6 +162,14 @@ def employee_register():
                     'INSERT INTO users (username, password, role, full_name) VALUES (?, ?, ?, ?)',
                     (email, password, 'employee', full_name)
                 )
+                new_user_id = cursor.lastrowid
+                today_reg = date.today()
+                months_remaining = 13 - today_reg.month
+                pro_rated = math.ceil(months_remaining / 12 * ANNUAL_LEAVE_DAYS)
+                cursor.execute(
+                    'INSERT OR IGNORE INTO leave_balance (user_id, year, total_days, carry_over_days) VALUES (?, ?, ?, 0)',
+                    (new_user_id, today_reg.year, pro_rated)
+                )
                 conn.commit()
                 conn.close()
                 return redirect(url_for('employee.employee_login'))
@@ -194,6 +222,7 @@ def employee_dashboard():
     conn.close()
 
     remaining = get_remaining_days(user_id, year)
+    annual_days = get_balance_total(user_id, year)
 
     recent_requests = [
         {'id': r[0], 'start_date': r[1], 'end_date': r[2],
@@ -211,7 +240,7 @@ def employee_dashboard():
         days_used=days_used,
         days_remaining=remaining,
         pending_count=pending_count,
-        annual_days=ANNUAL_LEAVE_DAYS,
+        annual_days=annual_days,
         recent_requests=recent_requests,
         upcoming_leaves=upcoming_leaves,
         now_year=year,

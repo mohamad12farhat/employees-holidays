@@ -1,6 +1,7 @@
 import sqlite3
 from datetime import date
 from flask import Flask, render_template, request, redirect, url_for, session, flash
+from apscheduler.schedulers.background import BackgroundScheduler
 from database import init_db, DB_PATH
 from employee import employee_bp
 from mail_utils import notify_employee_status_change, notify_employee_deactivated, notify_employee_reactivated
@@ -161,17 +162,20 @@ def manage_employees():
     current_year = str(date.today().year)
     cursor.execute('''
         SELECT u.id, u.username, u.full_name, u.is_active,
+               COALESCE(lb.total_days, 15) AS total_days,
+               COALESCE(lb.carry_over_days, 0) AS carry_over_days,
                COALESCE(SUM(
                    CASE WHEN lr.status IN ('pending', 'approved')
                         AND strftime('%Y', lr.start_date) = ?
                    THEN lr.leave_days ELSE 0 END
                ), 0) AS days_used
         FROM users u
+        LEFT JOIN leave_balance lb ON lb.user_id = u.id AND lb.year = ?
         LEFT JOIN leave_requests lr ON lr.user_id = u.id
         WHERE u.role = 'employee'
         GROUP BY u.id
         ORDER BY u.full_name
-    ''', (current_year,))
+    ''', (current_year, int(current_year)))
     employees = cursor.fetchall()
     conn.close()
     return render_template('admin_employees.html', employees=employees, current_year=int(current_year))
@@ -216,6 +220,54 @@ def toggle_employee_status(emp_id):
 def logout():
     session.clear()
     return redirect(url_for('login'))
+
+
+def run_year_end_reset():
+    """Runs automatically on Jan 1st: calculates carry-over and sets next-year balances."""
+    current_year = date.today().year - 1  # it's Jan 1st, so we're resetting the previous year
+    next_year = current_year + 1
+    MAX_CARRY_OVER = 5
+    MAX_TOTAL = 20
+    ANNUAL_DAYS = 15
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('SELECT id FROM users WHERE role = "employee" AND is_active = 1')
+    employees = cursor.fetchall()
+
+    for (emp_id,) in employees:
+        cursor.execute(
+            'SELECT total_days FROM leave_balance WHERE user_id = ? AND year = ?',
+            (emp_id, current_year)
+        )
+        row = cursor.fetchone()
+        total_days = row[0] if row else ANNUAL_DAYS
+
+        cursor.execute(
+            '''SELECT COALESCE(SUM(leave_days), 0) FROM leave_requests
+               WHERE user_id = ? AND strftime('%Y', start_date) = ?
+                 AND status IN ('pending', 'approved')''',
+            (emp_id, str(current_year))
+        )
+        used = cursor.fetchone()[0]
+        unused = max(0, total_days - used)
+        carry_over = min(unused, MAX_CARRY_OVER)
+        next_total = min(ANNUAL_DAYS + carry_over, MAX_TOTAL)
+
+        cursor.execute(
+            '''INSERT OR REPLACE INTO leave_balance (user_id, year, total_days, carry_over_days)
+               VALUES (?, ?, ?, ?)''',
+            (emp_id, next_year, next_total, carry_over)
+        )
+
+    conn.commit()
+    conn.close()
+    app.logger.info('Year-end reset complete: %d employee(s) updated for %d.', len(employees), next_year)
+
+
+scheduler = BackgroundScheduler()
+scheduler.add_job(run_year_end_reset, trigger='cron', month=1, day=1, hour=0, minute=1)
+scheduler.start()
 
 
 if __name__ == '__main__':
