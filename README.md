@@ -11,6 +11,7 @@ A web-based leave management system built with Flask, allowing employees to requ
 - Receive an email notification when their leave request is approved or rejected
 - View a monthly **team leave calendar** showing all approved leaves across the team, with prev/next month navigation, today highlighted, and color-coded indicators for own vs colleague leaves
 - **Edit pending requests** — modify the dates and/or reason of a pending leave request before it is reviewed; full validation (quota, overlap, conflict checks) is re-applied on save
+- **Low balance notification** — automatically receive a warning email when remaining leave drops to 5 days or fewer, so you can plan ahead
 
 **Admin**
 - Dashboard with live stats — total employees, pending, approved, and rejected requests
@@ -24,7 +25,6 @@ A web-based leave management system built with Flask, allowing employees to requ
 - Reactivate an employee account — employee receives an email notification
 - Deactivated employees are blocked from logging in
 - **Add leave manually** — log a leave on behalf of any employee (e.g. a sick day reported by phone); the leave is saved as approved instantly, the employee's balance is deducted, and they receive an email notification with the dates and an optional admin note
-- **Low balance notification** — when an employee's remaining leave drops to 5 days or fewer (after a request is approved or a leave is manually logged), they automatically receive a warning email so they can plan ahead
 
 ## Tech Stack
 
