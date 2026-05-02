@@ -188,6 +188,39 @@ def notify_employee_admin_logged_leave(
     _send(employee_email, subject, body)
 
 
+def notify_employee_low_balance(
+    employee_email: str,
+    full_name: str,
+    remaining_days: int,
+) -> None:
+    subject = 'Low Leave Balance Warning'
+    days_label = f'{remaining_days} day' if remaining_days == 1 else f'{remaining_days} days'
+    body = f"""
+    <div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;
+                border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;">
+      <div style="background:#1e4d8c;padding:20px 24px;">
+        <h2 style="color:white;margin:0;">Employee Holiday System</h2>
+      </div>
+      <div style="padding:28px 24px;">
+        <p style="color:#333;">Hi <strong>{full_name}</strong>,</p>
+        <p style="color:#333;">This is a reminder that your leave balance is running low.</p>
+        <table style="width:100%;border-collapse:collapse;margin:20px 0;">
+          <tr style="background:#fff8e1;">
+            <td style="padding:10px 14px;color:#555;font-size:13px;">Remaining Days</td>
+            <td style="padding:10px 14px;font-weight:700;font-size:18px;color:#e67e22;">{days_label}</td>
+          </tr>
+        </table>
+        <p style="color:#555;font-size:13px;">
+          Please plan your remaining leave carefully. If you have any questions,
+          contact your administrator.
+        </p>
+        <p style="color:#888;font-size:12px;margin-top:24px;">&copy; 2026 Employee Holiday System</p>
+      </div>
+    </div>
+    """
+    _send(employee_email, subject, body)
+
+
 def notify_admin_new_request(
     full_name: str,
     employee_email: str,
