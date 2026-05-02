@@ -5,7 +5,8 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from database import init_db, DB_PATH
 from employee import employee_bp
 from mail_utils import (notify_employee_status_change, notify_employee_deactivated,
-                        notify_employee_reactivated, notify_employee_admin_logged_leave)
+                        notify_employee_reactivated, notify_employee_admin_logged_leave,
+                        notify_employee_low_balance)
 
 app = Flask(__name__)
 app.secret_key = 'secret_key'
@@ -124,7 +125,7 @@ def update_request_status(request_id):
 
     # Fetch request + employee details to send notification
     cursor.execute(
-        '''SELECT lr.start_date, lr.end_date, lr.leave_days,
+        '''SELECT lr.user_id, lr.start_date, lr.end_date, lr.leave_days,
                   u.username AS email, u.full_name
            FROM leave_requests lr
            JOIN users u ON lr.user_id = u.id
@@ -147,6 +148,20 @@ def update_request_status(request_id):
         except Exception as e:
             app.logger.error('Email notification failed: %s', e)
             flash(f'Status updated but email notification failed: {e}', 'warning')
+
+    if row and new_status == 'approved':
+        from employee import get_remaining_days
+        year = int(row['start_date'][:4])
+        remaining = get_remaining_days(row['user_id'], year)
+        if 0 <= remaining <= 5:
+            try:
+                notify_employee_low_balance(
+                    employee_email=row['email'],
+                    full_name=row['full_name'] or row['email'],
+                    remaining_days=remaining,
+                )
+            except Exception as e:
+                app.logger.error('Low balance email failed: %s', e)
 
     flash(f'Request #{request_id} status updated to {new_status}.', 'success')
     return redirect(url_for('leave_requests'))
@@ -304,6 +319,17 @@ def admin_add_leave():
         except Exception as e:
             app.logger.error('Email notification failed: %s', e)
             flash(f'Leave logged but email notification failed: {e}', 'warning')
+
+        new_remaining = remaining - leave_days
+        if 0 <= new_remaining <= 5:
+            try:
+                notify_employee_low_balance(
+                    employee_email=emp_row['username'],
+                    full_name=emp_row['full_name'] or emp_row['username'],
+                    remaining_days=new_remaining,
+                )
+            except Exception as e:
+                app.logger.error('Low balance email failed: %s', e)
 
         flash(
             f'Leave logged successfully for {emp_row["full_name"] or emp_row["username"]} '
