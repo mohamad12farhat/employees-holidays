@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add Leave — Admin</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background-color: #2c3e50;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            height: 56px;
+        }
+        .navbar .brand { color: #fff; font-size: 18px; font-weight: bold; text-decoration: none; }
+        .navbar ul { list-style: none; display: flex; gap: 8px; }
+        .navbar ul li a {
+            color: #ccd6e0; text-decoration: none; padding: 8px 14px;
+            border-radius: 4px; font-size: 14px; transition: background-color 0.2s;
+        }
+        .navbar ul li a:hover { background-color: #3d5166; color: #fff; }
+        .navbar ul li a.active { background-color: #3d5166; color: #fff; }
+        .navbar ul li a.logout { color: #e74c3c; }
+        .navbar ul li a.logout:hover { background-color: #e74c3c; color: #fff; }
+
+        .content { flex: 1; padding: 40px; }
+
+        .page-header { margin-bottom: 28px; }
+        .page-header h2 { color: #333; font-size: 22px; margin-bottom: 4px; }
+        .page-header p { color: #888; font-size: 13px; }
+
+        .alert {
+            padding: 10px 14px; border-radius: 6px;
+            font-size: 13px; margin-bottom: 20px;
+        }
+        .alert-success { background-color: #e6f9f0; color: #1e7d4f; border: 1px solid #a8e6c7; }
+        .alert-danger  { background-color: #fff0f0; color: #c0392b; border: 1px solid #f5b7b1; }
+        .alert-warning { background-color: #fff7e6; color: #7a5200; border: 1px solid #ffe0a0; }
+
+        .form-card {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+            padding: 32px 36px;
+            max-width: 560px;
+        }
+
+        .form-group { margin-bottom: 20px; }
+        .form-group label {
+            display: block; font-size: 13px; font-weight: 600;
+            color: #444; margin-bottom: 7px;
+        }
+        .form-group select,
+        .form-group input[type="date"],
+        .form-group textarea {
+            width: 100%; padding: 9px 12px;
+            border: 1px solid #d0d7de; border-radius: 6px;
+            font-size: 14px; color: #333; background: #fff;
+            outline: none; transition: border-color 0.2s;
+            font-family: inherit;
+        }
+        .form-group select:focus,
+        .form-group input[type="date"]:focus,
+        .form-group textarea:focus { border-color: #2c3e50; }
+
+        .form-group textarea { resize: vertical; min-height: 80px; }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+        .hint { font-size: 12px; color: #aaa; margin-top: 4px; }
+
+        .btn-submit {
+            display: inline-block; padding: 10px 28px;
+            background-color: #2c3e50; color: #fff;
+            border: none; border-radius: 6px;
+            font-size: 14px; font-weight: 600;
+            cursor: pointer; transition: background-color 0.2s;
+        }
+        .btn-submit:hover { background-color: #1a252f; }
+
+        .footer { background-color: #1a252f; color: #8a9bb0; padding: 28px 40px 20px; }
+        .footer-inner {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            padding-bottom: 20px; border-bottom: 1px solid #2c3e50; gap: 40px;
+        }
+        .footer-brand-name { color: #fff; font-size: 15px; font-weight: bold; margin-bottom: 4px; }
+        .footer-tagline { font-size: 12px; color: #607080; }
+        .footer-links { display: flex; gap: 24px; padding-top: 2px; }
+        .footer-links a { color: #8a9bb0; text-decoration: none; font-size: 13px; transition: color 0.2s; }
+        .footer-links a:hover { color: #fff; }
+        .footer-copy { text-align: center; padding-top: 16px; font-size: 12px; color: #506070; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <a class="brand" href="/admin/dashboard">Admin Panel</a>
+    <ul>
+        <li><a href="/admin/dashboard">Dashboard</a></li>
+        <li><a href="/admin/leave-requests">Leave Requests</a></li>
+        <li><a href="/admin/employees">Employees</a></li>
+        <li><a href="/admin/add-leave" class="active">Add Leave</a></li>
+        <li><a class="logout" href="/admin/logout">Logout</a></li>
+    </ul>
+</nav>
+
+<div class="content">
+
+    <div class="page-header">
+        <h2>Add Leave Manually</h2>
+        <p>Log a leave on behalf of an employee. The leave is saved as approved and their balance is updated immediately.</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+
+    <div class="form-card">
+        <form method="POST" action="/admin/add-leave">
+
+            <div class="form-group">
+                <label for="employee_id">Employee</label>
+                <select name="employee_id" id="employee_id" required>
+                    <option value="">— Select an employee —</option>
+                    {% for emp in employees %}
+                    <option value="{{ emp['id'] }}">
+                        {{ emp['full_name'] or emp['username'].split('@')[0] | title }} ({{ emp['username'] }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="start_date">Start Date</label>
+                    <input type="date" name="start_date" id="start_date" required>
+                </div>
+                <div class="form-group">
+                    <label for="end_date">End Date</label>
+                    <input type="date" name="end_date" id="end_date" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="note">Note <span style="color:#aaa;font-weight:400;">(optional)</span></label>
+                <textarea name="note" id="note" placeholder="e.g. Sick day reported by phone, verbal approval..."></textarea>
+                <p class="hint">This note will be included in the email sent to the employee.</p>
+            </div>
+
+            <button type="submit" class="btn-submit">Log Leave</button>
+
+        </form>
+    </div>
+
+</div>
+
+<footer class="footer">
+    <div class="footer-inner">
+        <div>
+            <div class="footer-brand-name">Employee Holiday System</div>
+            <div class="footer-tagline">Admin Panel &mdash; Leave Management</div>
+        </div>
+        <nav class="footer-links">
+            <a href="/admin/dashboard">Dashboard</a>
+            <a href="/admin/leave-requests">Leave Requests</a>
+            <a href="/admin/employees">Employees</a>
+            <a href="/admin/logout">Logout</a>
+        </nav>
+    </div>
+    <div class="footer-copy">&copy; 2026 Employee Holiday System. All rights reserved.</div>
+</footer>
+
+</body>
+</html>
