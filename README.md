@@ -23,6 +23,7 @@ A web-based leave management system built with Flask, allowing employees to requ
 - Deactivate an employee account (with an optional reason) — employee receives an email notification
 - Reactivate an employee account — employee receives an email notification
 - Deactivated employees are blocked from logging in
+- **Add leave manually** — log a leave on behalf of any employee (e.g. a sick day reported by phone); the leave is saved as approved instantly, the employee's balance is deducted, and they receive an email notification with the dates and an optional admin note
 
 ## Tech Stack
 
