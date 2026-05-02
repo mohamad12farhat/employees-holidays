@@ -4,7 +4,8 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from apscheduler.schedulers.background import BackgroundScheduler
 from database import init_db, DB_PATH
 from employee import employee_bp
-from mail_utils import notify_employee_status_change, notify_employee_deactivated, notify_employee_reactivated
+from mail_utils import (notify_employee_status_change, notify_employee_deactivated,
+                        notify_employee_reactivated, notify_employee_admin_logged_leave)
 
 app = Flask(__name__)
 app.secret_key = 'secret_key'
@@ -214,6 +215,104 @@ def toggle_employee_status(emp_id):
     conn.close()
     return redirect(url_for('manage_employees'))
 
+
+
+@app.route('/admin/add-leave', methods=['GET', 'POST'])
+def admin_add_leave():
+    if not session.get('admin'):
+        flash('You must be logged in as admin to access that page.')
+        return redirect(url_for('login'))
+
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id, username, full_name FROM users WHERE role = 'employee' AND is_active = 1 ORDER BY full_name"
+    )
+    employees = cursor.fetchall()
+    conn.close()
+
+    if request.method == 'POST':
+        emp_id    = request.form.get('employee_id', '').strip()
+        start_str = request.form.get('start_date', '').strip()
+        end_str   = request.form.get('end_date', '').strip()
+        note      = request.form.get('note', '').strip() or None
+
+        if not emp_id or not start_str or not end_str:
+            flash('Employee, start date, and end date are all required.', 'danger')
+            return render_template('admin_add_leave.html', employees=employees)
+
+        try:
+            emp_id = int(emp_id)
+            start  = date.fromisoformat(start_str)
+            end    = date.fromisoformat(end_str)
+        except (ValueError, TypeError):
+            flash('Invalid input.', 'danger')
+            return render_template('admin_add_leave.html', employees=employees)
+
+        if end < start:
+            flash('End date cannot be before the start date.', 'danger')
+            return render_template('admin_add_leave.html', employees=employees)
+
+        from employee import count_working_days, get_remaining_days
+        leave_days = count_working_days(start_str, end_str)
+
+        if leave_days == 0:
+            flash('The selected range contains no working days (all weekends or public holidays).', 'danger')
+            return render_template('admin_add_leave.html', employees=employees)
+
+        year      = start.year
+        remaining = get_remaining_days(emp_id, year)
+
+        if leave_days > remaining:
+            flash(
+                f'Not enough leave days. The employee has {remaining} day(s) left '
+                f'but this leave requires {leave_days}.',
+                'danger'
+            )
+            return render_template('admin_add_leave.html', employees=employees)
+
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        # Verify employee exists
+        cursor.execute('SELECT username, full_name FROM users WHERE id = ? AND role = "employee"', (emp_id,))
+        emp_row = cursor.fetchone()
+        if not emp_row:
+            conn.close()
+            flash('Employee not found.', 'danger')
+            return render_template('admin_add_leave.html', employees=employees)
+
+        cursor.execute(
+            '''INSERT INTO leave_requests (user_id, start_date, end_date, reason, leave_days, status, logged_by_admin)
+               VALUES (?, ?, ?, ?, ?, 'approved', 1)''',
+            (emp_id, start_str, end_str, note, leave_days)
+        )
+        conn.commit()
+        conn.close()
+
+        try:
+            notify_employee_admin_logged_leave(
+                employee_email=emp_row['username'],
+                full_name=emp_row['full_name'] or emp_row['username'],
+                start_date=start_str,
+                end_date=end_str,
+                leave_days=leave_days,
+                note=note or '',
+            )
+        except Exception as e:
+            app.logger.error('Email notification failed: %s', e)
+            flash(f'Leave logged but email notification failed: {e}', 'warning')
+
+        flash(
+            f'Leave logged successfully for {emp_row["full_name"] or emp_row["username"]} '
+            f'({leave_days} day(s), {start_str} → {end_str}).',
+            'success'
+        )
+        return redirect(url_for('admin_add_leave'))
+
+    return render_template('admin_add_leave.html', employees=employees)
 
 
 @app.route('/admin/logout')

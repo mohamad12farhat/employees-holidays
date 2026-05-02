@@ -52,6 +52,10 @@ def init_db():
         cursor.execute('ALTER TABLE leave_requests RENAME COLUMN working_days TO leave_days')
     except Exception:
         pass  # Already renamed or column doesn't exist
+    try:
+        cursor.execute('ALTER TABLE leave_requests ADD COLUMN logged_by_admin INTEGER NOT NULL DEFAULT 0')
+    except Exception:
+        pass  # Column already exists
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS leave_balance (
             id              INTEGER PRIMARY KEY AUTOINCREMENT,
