@@ -341,6 +341,62 @@ def admin_add_leave():
     return render_template('admin_add_leave.html', employees=employees)
 
 
+@app.route('/admin/statistics')
+def leave_statistics():
+    if not session.get('admin'):
+        flash('You must be logged in as admin to access that page.')
+        return redirect(url_for('login'))
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    current_year = str(date.today().year)
+    cursor.execute('''
+        SELECT u.id, u.username, u.full_name,
+               COALESCE(lb.total_days, 15) AS total_days,
+               COALESCE(lb.carry_over_days, 0) AS carry_over_days,
+               COALESCE(SUM(
+                   CASE WHEN lr.status IN ('pending', 'approved')
+                        AND strftime('%Y', lr.start_date) = ?
+                   THEN lr.leave_days ELSE 0 END
+               ), 0) AS days_used,
+               COALESCE(SUM(
+                   CASE WHEN lr.status = 'approved'
+                        AND strftime('%Y', lr.start_date) = ?
+                   THEN lr.leave_days ELSE 0 END
+               ), 0) AS days_approved,
+               COALESCE(SUM(
+                   CASE WHEN lr.status = 'pending'
+                        AND strftime('%Y', lr.start_date) = ?
+                   THEN lr.leave_days ELSE 0 END
+               ), 0) AS days_pending
+        FROM users u
+        LEFT JOIN leave_balance lb ON lb.user_id = u.id AND lb.year = ?
+        LEFT JOIN leave_requests lr ON lr.user_id = u.id
+        WHERE u.role = 'employee' AND u.is_active = 1
+        GROUP BY u.id
+        ORDER BY days_used DESC
+    ''', (current_year, current_year, current_year, int(current_year)))
+    employees = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+
+    for emp in employees:
+        emp['remaining'] = emp['total_days'] - emp['days_used']
+
+    total_days_used = sum(e['days_used'] for e in employees)
+    avg_days_used = round(total_days_used / len(employees), 1) if employees else 0
+    at_limit = sum(1 for e in employees if e['remaining'] <= 0)
+    close_to_limit = sum(1 for e in employees if 0 < e['remaining'] <= 3)
+
+    return render_template('admin_statistics.html',
+        employees=employees,
+        current_year=int(current_year),
+        avg_days_used=avg_days_used,
+        total_days_used=total_days_used,
+        at_limit=at_limit,
+        close_to_limit=close_to_limit,
+    )
+
+
 @app.route('/admin/logout')
 def logout():
     session.clear()
