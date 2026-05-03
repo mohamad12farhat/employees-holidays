@@ -25,6 +25,7 @@ A web-based leave management system built with Flask, allowing employees to requ
 - Reactivate an employee account — employee receives an email notification
 - Deactivated employees are blocked from logging in
 - **Add leave manually** — log a leave on behalf of any employee (e.g. a sick day reported by phone); the leave is saved as approved instantly, the employee's balance is deducted, and they receive an email notification with the dates and an optional admin note
+- **Leave statistics** — dedicated statistics page showing per-employee leave usage with color-coded progress bars, days used vs remaining, approved vs pending breakdown, and status badges (OK / Low / At Limit); summary cards display total days used across the team, average per employee, number of employees close to their limit (≤3 days), and number at limit (0 days left); table is sortable by usage, remaining days, or name
 
 ## Tech Stack
 
